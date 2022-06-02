@@ -30,26 +30,35 @@ int main()
     MOVE_TEMPLATE mt[2];
     PIECE_TEMPLATE pt;
     PIECE p;
-    p.x = 5;
-    p.y = 5;
+    p.x = 0;
+    p.y = 0;
     p.ptemplate = &pt;
 
-    pt.name = "A";
-    pt.abbreviation = 'A';
+    pt.name = "Knight";
+    pt.abbreviation = 'N';
+    pt.nMoves = 2;
 
     pt.moves = mt;
 
-    mt[1].valid = 0;
-    mt[0] = (MOVE_TEMPLATE){0};
-    mt[0].valid = 1;
+    mt[0] = (MOVE_TEMPLATE){ 0 };
     mt[0].minRep = 1;
-    mt[0].maxRep = 2;
+    mt[0].maxRep = 1;
     mt[0].xDir = 1;
-    mt[0].yDir = 0;
+    mt[0].yDir = 2;
+    mt[0].flipX = 1;
+    mt[0].flipY = 1;
+
+    mt[1] = (MOVE_TEMPLATE){ 0 };
+    mt[1].minRep = 1;
+    mt[1].maxRep = 1;
+    mt[1].xDir = 2;
+    mt[1].yDir = 1;
+    mt[1].flipX = 1;
+    mt[1].flipY = 1;
 
     MOVE* moves = getPossibleMoves(&p);
 
-    for (size_t i = 0; moves[i].valid; i++)
+    for (size_t i = 0; moves; i++)
     {
         printf("(%d, %d) -> (%d, %d)\n", moves[i].x0, moves[i].y0, moves[i].x1, moves[i].y1);
     }

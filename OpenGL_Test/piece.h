@@ -1,4 +1,5 @@
 #pragma once
+#include <stdlib.h>
 
 #define PIECE_TYPE(piece) (piece & 0b111)
 #define IS_BLACK(piece) (piece & 1 << 7)
@@ -11,8 +12,7 @@ typedef struct {
 	char yDir;
 	unsigned char
 		flipX	: 1,
-		flipY	: 1,
-		valid	: 1;
+		flipY	: 1;
 
 	unsigned char
 		maxRep	: 3,
@@ -34,6 +34,7 @@ typedef struct {
 } MOVE;
 
 typedef struct {
+	unsigned char nMoves;
 	MOVE_TEMPLATE* moves;
 	char* name;
 	char abbreviation;

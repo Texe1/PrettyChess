@@ -24,6 +24,9 @@
     <ClCompile Include="piece.c">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="game.c">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="basicShader.vert">

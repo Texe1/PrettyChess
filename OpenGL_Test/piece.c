@@ -5,9 +5,9 @@ MOVE* getPossibleMoves(PIECE* p) {
 	unsigned int maxMoves = 0;
 	MOVE_TEMPLATE* mt = p->ptemplate->moves;
 	int i = 0;
-	while ((mt = p->ptemplate->moves + i)->valid) {
+	while (i < p->ptemplate->nMoves) {
+		mt = p->ptemplate->moves + i++;
 		maxMoves += getMaxMoveCount(&mt);
-		i++;
 	}
 
 	MOVE* moves = malloc((maxMoves + 1) * sizeof(MOVE));
@@ -20,27 +20,38 @@ MOVE* getPossibleMoves(PIECE* p) {
 	MOVE m = { 0 };
 	m.x0 = p->x;
 	m.y0 = p->y;
-	while ((mt = p->ptemplate->moves + i++)->valid) {
+	while (i < p->ptemplate->nMoves) {
+		mt = p->ptemplate->moves + i++;
 		int dx = mt->minRep * mt->xDir;
 		int dy = mt->minRep * mt->yDir;
 
-		for (int i = mt->minRep; i <= mt->maxRep; i++)
+		for (int k = mt->minRep; k <= mt->maxRep; k++)
 		{
-			m.x1 = p->x + dx;
-			m.y1 = p->y + dy;
 
-			moves[j++] = m;
+			unsigned char xPlus = ((((int)p->x + (int)dx) >= 0) && (((int)p->x + (int)dx) < 8));
+			unsigned char xMinus = ((((int)p->x - (int)dx) >= 0) && (((int)p->x - (int)dx) < 8));
+			unsigned char yPlus = ((((int)p->y + (int)dy) >= 0) && (((int)p->y + (int)dy) < 8));
+			unsigned char yMinus = ((((int)p->y - (int)dy) >= 0) && (((int)p->y - (int)dy) < 8));
 
-			if (mt->flipX) {
+			if (xPlus && yPlus) {
+				m.x1 = p->x + dx;
+				m.y1 = p->y + dy;
+				moves[j++] = m;
+			}
+
+			if (mt->flipX && xMinus && yPlus) { // flipped in X
 				m.x1 = p->x - dx;
 				moves[j++] = m;
 			}
-			if (mt->flipY) {
-				m.x1 = p->x + dx;
-				m.y1 = p->y - dy;
-				moves[j++] = m;
+			if (mt->flipY && yMinus) { // flipped in Y
+				if (xPlus) {
+					
+					m.x1 = p->x + dx;
+					m.y1 = p->y - dy;
+					moves[j++] = m;
+				}
 
-				if (mt->flipX) {
+				if (mt->flipX && xMinus) { // filpped in X and Y
 					m.x1 = p->x - dx;
 					moves[j++] = m;
 				}
@@ -51,7 +62,9 @@ MOVE* getPossibleMoves(PIECE* p) {
 		}
 	}
 
-	moves[j].valid = 0;
+	moves[maxMoves].valid = 0;
+
+	return moves;
 
 }
 
