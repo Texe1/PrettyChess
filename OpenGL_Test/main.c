@@ -12,6 +12,7 @@
 
 #include "board.h"
 #include "piece.h"
+#include "game.h"
 
 const char* vertSource = "#version 150 core\nin vec2 position;in vec3 color;in vec2 texCoord;out vec3 Color;out vec2 TexCoord;\nvoid main(){Color = color; TexCoord = texCoord; gl_Position = vec4(position, 0.0, 1.0);}";
 const char* fragSource = "#version 150 core\nin vec3 Color;in vec2 TexCoord;out vec4 outColor;uniform sampler2D tex;\nvoid main(){outColor = texture(tex, TexCoord);}";
@@ -27,6 +28,25 @@ BOARD board;
 int main()
 {
 
+    _BOARD* b = createStdBoard();
+    PIECE p = { 0 };
+    p.x = 1;
+    p.y = 1;
+    p.ptemplate = b->game.pieceTypes + 1;
+
+    b->nPieces = 1;
+    b->pieces = malloc(sizeof(PIECE));
+    if (!b->pieces) {
+        free(b);
+        return 1;
+    }
+
+    b->pieces[0].ptemplate = b->game.pieceTypes + 2;
+    b->pieces[0].x = 2;
+    b->pieces[0].y = 2;
+    b->squares[18] = 1 << 7 | 0;
+
+/*
     MOVE_TEMPLATE mt[2];
     PIECE_TEMPLATE pt;
     PIECE p;
@@ -55,13 +75,17 @@ int main()
     mt[1].yDir = 1;
     mt[1].flipX = 1;
     mt[1].flipY = 1;
+*/
 
-    MOVE* moves = getPossibleMoves(&p);
+    MOVE* moves = getPossibleMoves(&b->pieces[0]);
 
-    for (size_t i = 0; moves; i++)
+    for (size_t i = 0; moves[i].valid; i++)
     {
         printf("(%d, %d) -> (%d, %d)\n", moves[i].x0, moves[i].y0, moves[i].x1, moves[i].y1);
     }
+
+    free(b);
+    free(moves);
 
     return 0;
 

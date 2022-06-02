@@ -9,8 +9,10 @@ typedef struct {
 
 typedef struct {
 	GAME game;
-	unsigned char squares[64];
+	unsigned char squares[64]; // these contain the index of their piece (with bit 7 set)
 	MOVE* moves;
-} BOARD;
+	unsigned char nPieces;
+	PIECE* pieces;
+} _BOARD;
 
-BOARD* createStdBoard();
+_BOARD* createStdBoard();

@@ -7,7 +7,7 @@ MOVE* getPossibleMoves(PIECE* p) {
 	int i = 0;
 	while (i < p->ptemplate->nMoves) {
 		mt = p->ptemplate->moves + i++;
-		maxMoves += getMaxMoveCount(&mt);
+		maxMoves += getMaxMoveCount(mt);
 	}
 
 	MOVE* moves = malloc((maxMoves + 1) * sizeof(MOVE));
@@ -18,6 +18,7 @@ MOVE* getPossibleMoves(PIECE* p) {
 	i = 0;
 	unsigned int j = 0;
 	MOVE m = { 0 };
+	m.valid = 1;
 	m.x0 = p->x;
 	m.y0 = p->y;
 	while (i < p->ptemplate->nMoves) {
@@ -62,7 +63,7 @@ MOVE* getPossibleMoves(PIECE* p) {
 		}
 	}
 
-	moves[maxMoves].valid = 0;
+	moves[j].valid = 0;
 
 	return moves;
 
