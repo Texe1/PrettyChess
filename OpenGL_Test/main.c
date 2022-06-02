@@ -11,6 +11,7 @@
 #include "stb_loader.h"
 
 #include "board.h"
+#include "piece.h"
 
 const char* vertSource = "#version 150 core\nin vec2 position;in vec3 color;in vec2 texCoord;out vec3 Color;out vec2 TexCoord;\nvoid main(){Color = color; TexCoord = texCoord; gl_Position = vec4(position, 0.0, 1.0);}";
 const char* fragSource = "#version 150 core\nin vec3 Color;in vec2 TexCoord;out vec4 outColor;uniform sampler2D tex;\nvoid main(){outColor = texture(tex, TexCoord);}";
@@ -26,6 +27,36 @@ BOARD board;
 int main()
 {
 
+    MOVE_TEMPLATE mt[2];
+    PIECE_TEMPLATE pt;
+    PIECE p;
+    p.x = 5;
+    p.y = 5;
+    p.ptemplate = &pt;
+
+    pt.name = "A";
+    pt.abbreviation = 'A';
+
+    pt.moves = mt;
+
+    mt[1].valid = 0;
+    mt[0] = (MOVE_TEMPLATE){0};
+    mt[0].valid = 1;
+    mt[0].minRep = 1;
+    mt[0].maxRep = 2;
+    mt[0].xDir = 1;
+    mt[0].yDir = 0;
+
+    MOVE* moves = getPossibleMoves(&p);
+
+    for (size_t i = 0; moves[i].valid; i++)
+    {
+        printf("(%d, %d) -> (%d, %d)\n", moves[i].x0, moves[i].y0, moves[i].x1, moves[i].y1);
+    }
+
+    return 0;
+
+
     srand(time(0));
     board = (BOARD){ 0 };
     fillBoard(&board);
@@ -36,6 +67,7 @@ int main()
     if (!glfwInit())
         return -1;
 
+
     /* Create a windowed mode window and its OpenGL context */
     window = glfwCreateWindow(800, 800, "Hello World", NULL, NULL);
     if (!window)
@@ -43,6 +75,8 @@ int main()
         glfwTerminate();
         return -1;
     }
+
+    glfwSetWindowTitle(window, "Chess");
 
     /* Make the window's context current */
     glfwMakeContextCurrent(window);

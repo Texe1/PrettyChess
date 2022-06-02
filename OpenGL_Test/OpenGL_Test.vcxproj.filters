@@ -21,6 +21,9 @@
     <ClCompile Include="board.c">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="piece.c">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="basicShader.vert">
@@ -64,6 +67,12 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="stb_loader.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="piece.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="game.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
