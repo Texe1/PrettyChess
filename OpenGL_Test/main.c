@@ -14,37 +14,64 @@
 #include "piece.h"
 #include "game.h"
 
-const char* vertSource = "#version 150 core\nin vec2 position;in vec3 color;in vec2 texCoord;out vec3 Color;out vec2 TexCoord;\nvoid main(){Color = color; TexCoord = texCoord; gl_Position = vec4(position, 0.0, 1.0);}";
-const char* fragSource = "#version 150 core\nin vec3 Color;in vec2 TexCoord;out vec4 outColor;uniform sampler2D tex;\nvoid main(){outColor = texture(tex, TexCoord);}";
-
 unsigned int loadShader(char* fileName);
 unsigned int loadTexture(const char* fileName);
-int fillBufferFromBoard(BOARD* board, unsigned int vbo);
+int fillBufferFromBoard(_BOARD* board, unsigned int vbo);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 
 BOARD board;
+_BOARD* b;
 
 int main()
 {
-
-    _BOARD* b = createStdBoard();
-    
-
-    MOVE* moves = getPossibleMoves(&b->pieces[0x8], b);
-
-    for (size_t i = 0; moves[i].valid; i++)
-    {
-        printf("(%d, %d) -> (%d, %d)\n", moves[i].x0, moves[i].y0, moves[i].x1, moves[i].y1);
-    }
-
-    free(b);
-    free(moves);
-
-    return 0;
-
-
     srand(time(0));
+
+    b = createStdBoard();
+
+    /*MOVE m = { 0 };
+    m.x0 = 6;
+    m.y0 = 7;
+    m.x1 = 3;
+    m.y1 = 3;
+
+    _move(b, &m);
+    MOVE* moves = getPossibleMoves(&b->pieces[b->nPieces - 2], b);*/
+
+    system("pause");
+
+    print_board(b, 0);
+
+    /*for (int i = 0; i < 100; i++) {
+        MOVE* moves = NULL;
+        int nMoves = 0;
+        while (1) {
+            PIECE* randPiece = &b->pieces[rand() % b->nPieces];
+
+            if (!randPiece->present)
+                continue;
+
+            moves = getPossibleMoves(randPiece, b);
+            if (!moves)
+                continue;
+
+            while (moves[nMoves++].valid);
+            nMoves--;
+
+            if (nMoves)
+                break;
+        }
+
+        MOVE m = moves[rand() % nMoves];
+        _move(b, &m);
+
+        print_board(b);
+        printf("Made move: (%d, %d) -> (%d,%d), valid:%d\n", m.x0, m.y0, m.x1, m.y1, m.valid);
+        system("pause");
+    }*/
+
+
+    
     board = (BOARD){ 0 };
     fillBoard(&board);
 
@@ -185,7 +212,7 @@ int main()
     glCreateBuffers(1, &piecesVbo);
     glBindBuffer(GL_ARRAY_BUFFER, piecesVbo);
 
-    fillBufferFromBoard(&board, piecesVbo);
+    fillBufferFromBoard(b, piecesVbo);
     
     glVertexAttribIPointer(0, 2, GL_INT, 3 * sizeof(int), 0);
     glVertexAttribIPointer(1, 1, GL_INT, 3 * sizeof(int), 2 * sizeof(int));
@@ -245,28 +272,7 @@ int main()
         glUseProgram(piecesShaderProgram);
 
 
-        //int nPieces = board.b_King + board.b_Queens + board.b_Rooks + board.b_Knights + board.b_Bishops + board.b_Pawns
-        //    + board.w_King + board.w_Queens + board.w_Rooks + board.w_Knights + board.w_Bishops + board.w_Pawns + (board.selected >= 64 ? 1 : 0);
-        
-        /*i++;
-        if (i >= 50 && board.b_King != 0 && board.w_King != 0) {
-            int x0 = (rand() % 8);
-            int y0 = (rand() % 8);
-            int x1 = (rand() % 8);
-            int y1 = (rand() % 8);
-            while (move(&board, x0, y0, x1, y1) != 0) {
-                x0 = (rand() % 8);
-                y0 = (rand() % 8);
-                x1 = (rand() % 8);
-                y1 = (rand() % 8);
-            }
-
-            printf("(%d, %d) -> (%d, %d)\n", x0, y0, x1, y1);
-
-            i = 0;
-        }*/
-
-        int nPieces = fillBufferFromBoard(&board, piecesVbo);
+        int nPieces = fillBufferFromBoard(b, piecesVbo);
 
         glDrawArrays(GL_POINTS, 0, nPieces);
 
@@ -274,6 +280,9 @@ int main()
         glfwPollEvents();
     }
     glfwTerminate();
+    
+    free(b);
+
     return 0;
 }
 
@@ -374,97 +383,30 @@ unsigned int loadTexture(const char* fileName) {
     return tex;
 }
 
-int fillBufferFromBoard(BOARD* board, unsigned int vbo) {
+int fillBufferFromBoard(_BOARD* b, unsigned int vbo) {
     int nPieces = 0;
-    int nColored = 0;
-    int evolveCol = 0;
 
-    if (board->evolve) {
-        while (PIECE_TYPE(board->squares[56 * board->turn + evolveCol].piece) != PAWN) {
-            evolveCol++;
-        }
-    }
-
-    for (size_t i = 0; i < 64; i++)
+    for (size_t i = 0; i < b->nPieces; i++)
     {
-        SQUARE* s = board->squares + i;
-        if (PIECE_TYPE(s->piece) != 0) {
+        if (b->pieces[i].present)
             nPieces++;
-        }
     }
 
-    int selected = (board->selected & ~64);
-    for (int i = 0; i < 64; i++)
-    {
-        SQUARE* s = board->squares + i;
-        if (s->color != 0) {
-            nPieces++;
-            nColored++;
-        }
-    }
-    if (board->selected >= 64) {
-        nPieces++; nColored++;
-    }
-    int* result = (int*)malloc(nPieces * 3 * sizeof(int) + board->evolve * 4*12);
+    int* result = (int*)malloc(nPieces * 3 * sizeof(int));
     if (!result)
-        return NULL;
-
-
-    nColored = 0;
-    if (board->selected >= 64) {
-        result[0] = board->selected % 8;
-        result[1] = (selected - (selected % 8)) / 8;
-        result[2] = 12;
-        nColored++;
-    }
-
-
-
-    for (int i = 0; i < 64; i++)
-    {
-        SQUARE* s = board->squares + i;
-        if (s->color) {
-            result[3 * nColored] = i % 8;
-            result[3 * nColored + 1] = (i - i % 8) / 8;
-            result[3 * nColored + 2] = (s->piece || ((i % 8 != board->selected % 8) && (PIECE_TYPE(board->squares[board->selected & 0b111111].piece) == PAWN))) ? 14 : 13;
-            nColored++;
-        }
-    }
+        return 0;
 
     int j = 0;
-    for (int i = 0; i < 64; i++)
+    for (size_t i = 0; i < b->nPieces; i++)
     {
-        SQUARE* s = board->squares + i;
-        if (PIECE_TYPE(s->piece) != 0) {
-            result[3 * (j + nColored)] = i % 8;
-            result[3 * (j + nColored) + 1] = (i - (i % 8)) / 8;
-            result[3 * (j + nColored) + 2] = 6 - PIECE_TYPE(s->piece);
-            if (!IS_BLACK(s->piece))
-                result[3 * (j + nColored) + 2] += 6;
-
-            if (++j == nPieces)
-                break;
+        if (b->pieces[i].present) {
+            result[j * 3] = b->pieces[i].x;
+            result[j * 3 + 1] = b->pieces[i].y;
+            result[j * 3 + 2] = (int) (b->pieces[i].ptemplate - b->game.pieceTypes);
+            if (b->pieces[i].col)
+                result[3 * j + 2] += 6;
+            j++;
         }
-    }
-
-    if (board->evolve) {
-        printf("evolve!");
-        result[3 * nPieces] = evolveCol;
-        result[3 * nPieces + 1] = board->turn ? 6 : 1;
-        result[3 * nPieces + 2] = 15 & (1 << 4);
-        nPieces++;
-        result[3 * nPieces] = evolveCol;
-        result[3 * nPieces + 1] = board->turn ? 5 : 2;
-        result[3 * nPieces + 2] = 15 & (2 << 4);
-        nPieces++;
-        result[3 * nPieces] = evolveCol;
-        result[3 * nPieces + 1] = board->turn ? 4 : 3;
-        result[3 * nPieces + 2] = 15 & (3 << 4);
-        nPieces++;
-        result[3 * nPieces] = evolveCol;
-        result[3 * nPieces + 1] = board->turn ? 3 : 4;
-        result[3 * nPieces + 2] = 15 & (4 << 4);
-        nPieces++;
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -475,14 +417,117 @@ int fillBufferFromBoard(BOARD* board, unsigned int vbo) {
     return nPieces;
 }
 
+//int fillBufferFromBoard(BOARD* board, unsigned int vbo) {
+//    int nPieces = 0;
+//    int nColored = 0;
+//    int evolveCol = 0;
+//
+//    if (board->evolve) {
+//        while (PIECE_TYPE(board->squares[56 * board->turn + evolveCol].piece) != PAWN) {
+//            evolveCol++;
+//        }
+//    }
+//
+//    for (size_t i = 0; i < 64; i++)
+//    {
+//        SQUARE* s = board->squares + i;
+//        if (PIECE_TYPE(s->piece) != 0) {
+//            nPieces++;
+//        }
+//    }
+//
+//    int selected = (board->selected & ~64);
+//    for (int i = 0; i < 64; i++)
+//    {
+//        SQUARE* s = board->squares + i;
+//        if (s->color != 0) {
+//            nPieces++;
+//            nColored++;
+//        }
+//    }
+//    if (board->selected >= 64) {
+//        nPieces++; nColored++;
+//    }
+//    int* result = (int*)malloc(nPieces * 3 * sizeof(int) + board->evolve * 4*12);
+//    if (!result)
+//        return NULL;
+//
+//
+//    nColored = 0;
+//    if (board->selected >= 64) {
+//        result[0] = board->selected % 8;
+//        result[1] = (selected - (selected % 8)) / 8;
+//        result[2] = 12;
+//        nColored++;
+//    }
+//
+//
+//
+//    for (int i = 0; i < 64; i++)
+//    {
+//        SQUARE* s = board->squares + i;
+//        if (s->color) {
+//            result[3 * nColored] = i % 8;
+//            result[3 * nColored + 1] = (i - i % 8) / 8;
+//            result[3 * nColored + 2] = (s->piece || ((i % 8 != board->selected % 8) && (PIECE_TYPE(board->squares[board->selected & 0b111111].piece) == PAWN))) ? 14 : 13;
+//            nColored++;
+//        }
+//    }
+//
+//    int j = 0;
+//    for (int i = 0; i < 64; i++)
+//    {
+//        SQUARE* s = board->squares + i;
+//        if (PIECE_TYPE(s->piece) != 0) {
+//            result[3 * (j + nColored)] = i % 8;
+//            result[3 * (j + nColored) + 1] = (i - (i % 8)) / 8;
+//            result[3 * (j + nColored) + 2] = 6 - PIECE_TYPE(s->piece);
+//            if (!IS_BLACK(s->piece))
+//                result[3 * (j + nColored) + 2] += 6;
+//
+//            if (++j == nPieces)
+//                break;
+//        }
+//    }
+//
+//    if (board->evolve) {
+//        printf("evolve!");
+//        result[3 * nPieces] = evolveCol;
+//        result[3 * nPieces + 1] = board->turn ? 6 : 1;
+//        result[3 * nPieces + 2] = 15 & (1 << 4);
+//        nPieces++;
+//        result[3 * nPieces] = evolveCol;
+//        result[3 * nPieces + 1] = board->turn ? 5 : 2;
+//        result[3 * nPieces + 2] = 15 & (2 << 4);
+//        nPieces++;
+//        result[3 * nPieces] = evolveCol;
+//        result[3 * nPieces + 1] = board->turn ? 4 : 3;
+//        result[3 * nPieces + 2] = 15 & (3 << 4);
+//        nPieces++;
+//        result[3 * nPieces] = evolveCol;
+//        result[3 * nPieces + 1] = board->turn ? 3 : 4;
+//        result[3 * nPieces + 2] = 15 & (4 << 4);
+//        nPieces++;
+//    }
+//
+//    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+//    glBufferData(GL_ARRAY_BUFFER, nPieces * 12, result, GL_DYNAMIC_DRAW);
+//
+//    free(result);
+//
+//    return nPieces;
+//}
+
 int t;
 
 int mouseX = 0, mouseY = 0;
 
+int turn = 0;
+
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        if (board.selected >= 64) {
+        /*if (board.selected >= 64) 
             int x0 = board.selected % 8;
             int y0 = (board.selected % 64 - board.selected % 8) / 8;
             int x1 = (mouseX - mouseX % 100) / 100;
@@ -490,11 +535,35 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             move(&board, x0, y0, x1, y1);
             printf("(%d, %d) -> (%d, %d)\n", x0, y0, x1, y1);
             deselectInBoard(&board);
+            
         } else {
 
             deselectInBoard(&board);
             selectInBoard(&board, (mouseX - mouseX % 100) / 100, 7 - ((mouseY - mouseY % 100) / 100));
+        }*/
+        MOVE* moves = NULL;
+        int nMoves = 0;
+        while (1) {
+            PIECE* randPiece = &b->pieces[rand() % b->nPieces];
+
+            if (!randPiece->present || randPiece->col != turn)
+                continue;
+
+            moves = getPossibleMoves(randPiece, b);
+            if (!moves)
+                continue;
+
+            while (moves[nMoves++].valid);
+            nMoves--;
+
+            if (nMoves) {
+                MOVE m = moves[rand() % nMoves];
+                _move(b, &m);
+                turn ^= 1;
+                break;
+            }
         }
+
         
     }
 }

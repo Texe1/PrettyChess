@@ -40,17 +40,23 @@ typedef struct PIECE_TEMPLATE {
 	MOVE_TEMPLATE* moves;
 	char* name;
 	char abbreviation;
+	unsigned char 
+		king		: 1,
+		multiKing	: 1; // for funny game modes with multiple King pieces :)
 } PIECE_TEMPLATE;
 
 typedef struct PIECE {
 	PIECE_TEMPLATE* ptemplate;
-	unsigned char
+	unsigned short
 		x		: 3,
 		y		: 3,
 		col		: 1,
-		moved	: 1;
+		moved	: 1,
+		present	: 1;
 } PIECE;
 
 MOVE* getPossibleMoves(PIECE* p, void* pBoard);
 
 inline int getMaxMoveCount(MOVE_TEMPLATE*);
+
+int _move(void*, MOVE*);

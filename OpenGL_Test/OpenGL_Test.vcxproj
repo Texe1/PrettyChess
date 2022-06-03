@@ -156,7 +156,6 @@
   <ItemGroup>
     <Image Include="ChessBoard.png" />
     <Image Include="Chess_Pieces.png" />
-    <Image Include="kitten.png" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h" />

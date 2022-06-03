@@ -93,7 +93,7 @@ _BOARD* createStdBoard() {
 		board->game.pieceTypes[3].abbreviation = 'N';
 		board->game.pieceTypes[3].moves = ((MOVE_TEMPLATE*)(board->game.pieceTypes + 6)) + 8;
 
-		board->game.pieceTypes[3].nMoves = 3;
+		board->game.pieceTypes[3].nMoves = 2;
 
 		MOVE_TEMPLATE move = { 0 };
 		move.flipX = 1;
@@ -192,6 +192,7 @@ void startGame(_BOARD* board) {
 			p.ptemplate = &board->game.pieceTypes[index];
 			p.x = x;
 			p.y = y;
+			p.present = 1;
 
 			board->pieces[j] = p;
 			board->squares[i] = j++ | (1 << 7);
@@ -254,4 +255,26 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
 	}
 
 	return NULL;
+}
+
+
+#define gotoxy(x,y) printf("\033[%d;%dH", (int)(y), (int)(x))
+void print_board(_BOARD* board, int y) {
+	gotoxy(0, y);
+	for (int i = 63; i >= 0; i--)
+	{
+
+		if (board->squares[i]) {
+			if (board->pieces[board->squares[i] & 0b1111111].col)
+				printf("b");
+			else
+				printf("w");
+			printf("%c", board->pieces[board->squares[i] & 0b1111111].ptemplate->abbreviation);
+		}
+		else {
+			printf("  ");
+		}
+		if (i % 8 == 0)
+			printf("\n");
+	}
 }

@@ -26,3 +26,5 @@ void startGame(_BOARD* board);
 void setStartingPos(GAME* game, const char* pos);
 
 MOVE* funnyMovesStd(PIECE* piece, _BOARD* board);
+
+void print_board(_BOARD* board, int y);

@@ -60,7 +60,7 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard) {
 				m.x1 = p->x + dx;
 				m.y1 = p->y + dy;
 
-				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
+ 				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
 					if ((board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col) && !mt->cantCap && k >= mt->minRep) { // capturing
 						m.cap = 1;
 						moves[j++] = m;
@@ -75,6 +75,7 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard) {
 
 			if (flipX && xMinus && yPlus) { // flipped in X
 				m.x1 = p->x - dx;
+				m.y1 = p->y + dy;
 				
 				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
 					if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k >= mt->minRep) {// capturing
@@ -88,28 +89,28 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard) {
 					moves[j++] = m;
 				}
 			}
-			if (flipY && yMinus) { // flipped in Y
-				if (xPlus) {
-					
-					m.x1 = p->x + dx;
-					m.y1 = p->y - dy;
 
-					if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
-						if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k >= mt->minRep) {// capturing
-							m.cap = 1;
-							moves[j++] = m;
-							m.cap = 0;
-						}
-						flipY = 0;
-					}
-					else if (!mt->mustCap && k >= mt->minRep) {
+			if (flipY && yMinus && xPlus) { // flipped in Y
+				m.x1 = p->x + dx;
+				m.y1 = p->y - dy;
+
+				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
+					if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k >= mt->minRep) {// capturing
+						m.cap = 1;
 						moves[j++] = m;
+						m.cap = 0;
 					}
+					flipY = 0;
+				}
+				else if (!mt->mustCap && k >= mt->minRep) {
+					moves[j++] = m;
 				}
 			}
+
 			if (flipXY && xMinus && yMinus) {
 				m.x1 = p->x - dx;
 				m.y1 = p->y - dy;
+
 				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
 					if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k < mt->minRep) {
 						m.cap = 1;
@@ -144,4 +145,36 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard) {
 
 inline int getMaxMoveCount(MOVE_TEMPLATE* templ) {
 	return templ->maxRep * (templ->flipX ? 2 : 1) * (templ->flipY ? 2 : 1);
+}
+
+int _move(void* b, MOVE* m) {
+
+	_BOARD* board = (_BOARD*)b;
+
+	
+
+	int index = m->y0 * 8 + m->x0;
+	if (board->squares[index]) {
+		print_board(board, 0);
+
+		int destIndex = m->y1 * 8 + m->x1;
+		board->pieces[board->squares[index] & 0b1111111].x = m->x1;
+		board->pieces[board->squares[index] & 0b1111111].y = m->y1;
+		board->pieces[board->squares[index] & 0b1111111].moved = 1;
+		if (m->cap && board->squares[destIndex]) {
+			board->pieces[board->squares[destIndex] & 0b1111111].present = 0;
+		}
+		else {
+			// TODO implement funnyMoves
+		}
+		board->squares[destIndex] = board->squares[index];
+		board->squares[index] = 0;
+
+		printf("Made move: (%d, %d) -> (%d,%d), valid:%d\n", m->x0, m->y0, m->x1, m->y1, m->valid);
+
+		print_board(board, 10);
+
+		return 0;
+	}
+	else return 1;
 }

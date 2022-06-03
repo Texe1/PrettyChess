@@ -55,9 +55,6 @@
     <Image Include="ChessBoard.png">
       <Filter>Ressourcendateien</Filter>
     </Image>
-    <Image Include="kitten.png">
-      <Filter>Ressourcendateien</Filter>
-    </Image>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h">
