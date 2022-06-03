@@ -7,7 +7,7 @@
 #define IS_SELECTED(piece) (((piece) & 1 << 6) != 0)
 #define EN_PASSANT(piece) ((piece) & (1 << 5))
 
-typedef struct {
+typedef struct MOVE_TEMPLATE {
 	char xDir;
 	char yDir;
 	unsigned char
@@ -25,7 +25,7 @@ typedef struct {
 
 } MOVE_TEMPLATE;
 
-typedef struct {
+typedef struct MOVE {
 	unsigned short
 		x0		: 3,
 		y0		: 3,
@@ -35,14 +35,14 @@ typedef struct {
 		valid	: 1;
 } MOVE;
 
-typedef struct {
+typedef struct PIECE_TEMPLATE {
 	unsigned char nMoves;
 	MOVE_TEMPLATE* moves;
 	char* name;
 	char abbreviation;
 } PIECE_TEMPLATE;
 
-typedef struct {
+typedef struct PIECE {
 	PIECE_TEMPLATE* ptemplate;
 	unsigned char
 		x		: 3,

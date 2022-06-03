@@ -29,33 +29,9 @@ int main()
 {
 
     _BOARD* b = createStdBoard();
-    PIECE p = { 0 };
-    p.x = 1;
-    p.y = 1;
-    p.ptemplate = b->game.pieceTypes + 1;
+    
 
-    b->nPieces = 1;
-    b->pieces = malloc(sizeof(PIECE) * 2);
-    if (!b->pieces) {
-        free(b);
-        return 1;
-    }
-
-    b->pieces[0] = (PIECE){ 0 };
-
-    b->pieces[0].ptemplate = b->game.pieceTypes + 5;
-    b->pieces[0].x = 2;
-    b->pieces[0].y = 2;
-    b->pieces[0].col = 0;
-    b->squares[18] = 1 << 7 | 0;
-
-    b->pieces[1].ptemplate = b->game.pieceTypes + 2;
-    b->pieces[1].x = 1;
-    b->pieces[1].y = 3;
-    b->squares[26] = 1 << 7 | 1;
-    b->pieces[1].col = 1;
-
-    MOVE* moves = getPossibleMoves(&b->pieces[0], b);
+    MOVE* moves = getPossibleMoves(&b->pieces[0x8], b);
 
     for (size_t i = 0; moves[i].valid; i++)
     {
