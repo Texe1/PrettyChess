@@ -21,10 +21,13 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 
 _BOARD* b;
 
-char selected = 0;
 char turn;
+
+char selected = 0;
 int selectedX = 0;
 int selectedY = 0;
+int nPossibleMoves = 0;
+MOVE* possibleMoves = NULL;
 
 int main()
 {
@@ -337,16 +340,16 @@ int fillBufferFromBoard(_BOARD* b, unsigned int vbo) {
         }
     }
 
-    int* result = (int*)malloc((nPieces + nMoves) * 3 * sizeof(int));
+    int* result = (int*)malloc((nPieces + nPossibleMoves) * 3 * sizeof(int));
     if (!result)
         return 0;
 
     int j = 0;
-    if (moves) {
-        while (moves[j].valid) {
-            result[j * 3] = moves[j].x1;
-            result[j * 3 + 1] = moves[j].y1;
-            result[j * 3 + 2] = moves[j].cap ? 14 : 12;
+    if (possibleMoves) {
+        while (possibleMoves[j].valid) {
+            result[j * 3] = possibleMoves[j].x1;
+            result[j * 3 + 1] = possibleMoves[j].y1;
+            result[j * 3 + 2] = possibleMoves[j].cap ? 14 : 12;
             j++;
         }
     }
@@ -382,6 +385,20 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         selectedY = 7 - mouseY / 100;
         printf("(%d, %d)\n", selectedX, selectedY);
         selected = b->squares[8 * selectedY + selectedX] && b->pieces[b->squares[8 * selectedY + selectedX] & 0b1111111].col == turn;
+        if (selected) {
+            if (possibleMoves)
+                free(possibleMoves);
+            possibleMoves = getPossibleMoves(&b->pieces[b->squares[8 * selectedY + selectedX] & 0b1111111], b);
+            nPossibleMoves = 0;
+            while (possibleMoves[nPossibleMoves++].valid);
+            nPossibleMoves--;
+        }
+        else {
+            if (possibleMoves)
+                free(possibleMoves);
+            possibleMoves = NULL;
+            nPossibleMoves = 0;
+        }
         /*MOVE* moves = NULL;
         int nMoves = 0;
         while (1) {
@@ -414,6 +431,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 int y = 7 - mouseY / 100;
                 if ((moves[i].x1 == x) && (moves[i].y1 == y)) {
                     _move(b, moves + i);
+                    if (possibleMoves)
+                        free(possibleMoves);
+                    possibleMoves = NULL;
+                    nPossibleMoves = 0;
                     selected = 0;
                     turn ^= 1;
                 }
