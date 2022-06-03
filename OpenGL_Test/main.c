@@ -29,14 +29,30 @@ int main()
 
     b = createStdBoard();
 
-    /*MOVE m = { 0 };
-    m.x0 = 6;
-    m.y0 = 7;
-    m.x1 = 3;
-    m.y1 = 3;
+    MOVE m = { 0 };
+    m.x0 = 0;
+    m.y0 = 1;
+    m.x1 = 0;
+    m.y1 = 4;
 
     _move(b, &m);
-    MOVE* moves = getPossibleMoves(&b->pieces[b->nPieces - 2], b);*/
+    m.x0 = 1;
+    m.y0 = 6;
+    m.x1 = 1;
+    m.y1 = 4;
+    _move(b, &m);
+
+    m.x0 = 0;
+    m.y0 = 4;
+    m.x1 = 1;
+    m.y1 = 5;
+    m.cap = 1;
+    _move(b, &m);
+
+
+
+
+    MOVE* moves = getPossibleMoves(&b->pieces[8], b);
 
     system("pause");
 

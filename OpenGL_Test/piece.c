@@ -164,7 +164,8 @@ int _move(void* b, MOVE* m) {
 		if (m->cap && board->squares[destIndex]) {
 			board->pieces[board->squares[destIndex] & 0b1111111].present = 0;
 		}
-		else {
+		else if(m->cap) {
+			board->game.doFunnyMove(&board->pieces[board->squares[m->y0 * 8 +m->x0] & 0b1111111], board, m);
 			// TODO implement funnyMoves
 		}
 		board->squares[destIndex] = board->squares[index];

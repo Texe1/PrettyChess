@@ -8,6 +8,7 @@ typedef struct GAME {
 	PIECE_TEMPLATE* pieceTypes;
 	unsigned char startPosition[64];
 	MOVE* (*funnyMoves)(PIECE*, struct _BOARD*);
+	void (*doFunnyMove)(PIECE*, struct _BOARD*, MOVE*);
 } GAME;
 
 typedef struct _BOARD {
@@ -26,5 +27,7 @@ void startGame(_BOARD* board);
 void setStartingPos(GAME* game, const char* pos);
 
 MOVE* funnyMovesStd(PIECE* piece, _BOARD* board);
+
+void doFunnyMoveStd(PIECE*, struct _BOARD*, MOVE*);
 
 void print_board(_BOARD* board, int y);

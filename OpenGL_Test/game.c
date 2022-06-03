@@ -162,6 +162,7 @@ _BOARD* createStdBoard() {
 	setStartingPos(&board->game, "RNBQKBNRPPPPPPPP8888pppppppprnbqkbnr");
 
 	board->game.funnyMoves = funnyMovesStd;
+	board->game.doFunnyMove = doFunnyMoveStd;
 	board->nMoves = 0;
 
 	startGame(board);
@@ -257,6 +258,17 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
 	return NULL;
 }
 
+void doFunnyMoveStd(PIECE* piece, struct _BOARD* board, MOVE* move) {
+	if (piece->ptemplate->abbreviation == 'P') {
+		if (!board->squares[move->y1 * 8 + move->x1]) { // probably en passant
+			if (abs(move->x1 - move->x0) == 1 && abs(move->y0 - move->y1) == 1 && (board->squares[move->y0 * 8 + move->x1] && board->pieces[board->squares[move->y0 * 8 + move->x1] & 0b1111111].ptemplate->abbreviation == 'P')) { // definetely En passant
+				/*board->squares[move->y1 * 8 + move->x1] = board->squares[move->y0 * 8 + move->x0];
+				board->squares[move->y0 * 8 + move->x0] = 0;*/
+				board->squares[move->y0 * 8 + move->x1] = 0;
+			}
+		}
+	}
+}
 
 #define gotoxy(x,y) printf("\033[%d;%dH", (int)(y), (int)(x))
 void print_board(_BOARD* board, int y) {
