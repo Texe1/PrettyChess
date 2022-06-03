@@ -35,49 +35,27 @@ int main()
     p.ptemplate = b->game.pieceTypes + 1;
 
     b->nPieces = 1;
-    b->pieces = malloc(sizeof(PIECE));
+    b->pieces = malloc(sizeof(PIECE) * 2);
     if (!b->pieces) {
         free(b);
         return 1;
     }
 
-    b->pieces[0].ptemplate = b->game.pieceTypes + 2;
+    b->pieces[0] = (PIECE){ 0 };
+
+    b->pieces[0].ptemplate = b->game.pieceTypes + 5;
     b->pieces[0].x = 2;
     b->pieces[0].y = 2;
+    b->pieces[0].col = 0;
     b->squares[18] = 1 << 7 | 0;
 
-/*
-    MOVE_TEMPLATE mt[2];
-    PIECE_TEMPLATE pt;
-    PIECE p;
-    p.x = 0;
-    p.y = 0;
-    p.ptemplate = &pt;
+    b->pieces[1].ptemplate = b->game.pieceTypes + 2;
+    b->pieces[1].x = 1;
+    b->pieces[1].y = 3;
+    b->squares[26] = 1 << 7 | 1;
+    b->pieces[1].col = 1;
 
-    pt.name = "Knight";
-    pt.abbreviation = 'N';
-    pt.nMoves = 2;
-
-    pt.moves = mt;
-
-    mt[0] = (MOVE_TEMPLATE){ 0 };
-    mt[0].minRep = 1;
-    mt[0].maxRep = 1;
-    mt[0].xDir = 1;
-    mt[0].yDir = 2;
-    mt[0].flipX = 1;
-    mt[0].flipY = 1;
-
-    mt[1] = (MOVE_TEMPLATE){ 0 };
-    mt[1].minRep = 1;
-    mt[1].maxRep = 1;
-    mt[1].xDir = 2;
-    mt[1].yDir = 1;
-    mt[1].flipX = 1;
-    mt[1].flipY = 1;
-*/
-
-    MOVE* moves = getPossibleMoves(&b->pieces[0]);
+    MOVE* moves = getPossibleMoves(&b->pieces[0], b);
 
     for (size_t i = 0; moves[i].valid; i++)
     {

@@ -12,13 +12,15 @@ typedef struct {
 	char yDir;
 	unsigned char
 		flipX	: 1,
-		flipY	: 1;
+		flipY	: 1,
+		init	: 1,
+		jump	: 1;
 
 	unsigned char
 		maxRep	: 3,
 		minRep	: 3,
 		mustCap	: 1,
-		jump	: 1;
+		cantCap	: 1;
 
 
 } MOVE_TEMPLATE;
@@ -43,10 +45,12 @@ typedef struct {
 typedef struct {
 	PIECE_TEMPLATE* ptemplate;
 	unsigned char
-		x	: 3,
-		y	: 3;
+		x		: 3,
+		y		: 3,
+		col		: 1,
+		moved	: 1;
 } PIECE;
 
-MOVE* getPossibleMoves(PIECE* p);
+MOVE* getPossibleMoves(PIECE* p, void* pBoard);
 
 inline int getMaxMoveCount(MOVE_TEMPLATE*);

@@ -1,6 +1,9 @@
 #include "piece.h"
+#include "game.h"
 
-MOVE* getPossibleMoves(PIECE* p) {
+MOVE* getPossibleMoves(PIECE* p, void* pBoard) {
+	_BOARD* board = (_BOARD*)pBoard;
+
 	// calculating maximum possible moves and allocating heap space
 	unsigned int maxMoves = 0;
 	MOVE_TEMPLATE* mt = p->ptemplate->moves;
@@ -26,34 +29,85 @@ MOVE* getPossibleMoves(PIECE* p) {
 		int dx = mt->minRep * mt->xDir;
 		int dy = mt->minRep * mt->yDir;
 
-		for (int k = mt->minRep; k <= mt->maxRep; k++)
+		char std = 1;
+		char flipX = mt->flipX;
+		char flipY = mt->flipY;
+		char flipXY = flipX && flipY;
+
+		for (int k = 1; k <= mt->maxRep; k++)
 		{
+
+			if (mt->init && p->moved)
+				continue;
 
 			unsigned char xPlus = ((((int)p->x + (int)dx) >= 0) && (((int)p->x + (int)dx) < 8));
 			unsigned char xMinus = ((((int)p->x - (int)dx) >= 0) && (((int)p->x - (int)dx) < 8));
 			unsigned char yPlus = ((((int)p->y + (int)dy) >= 0) && (((int)p->y + (int)dy) < 8));
 			unsigned char yMinus = ((((int)p->y - (int)dy) >= 0) && (((int)p->y - (int)dy) < 8));
 
-			if (xPlus && yPlus) {
+			if (std && xPlus && yPlus) {
 				m.x1 = p->x + dx;
 				m.y1 = p->y + dy;
-				moves[j++] = m;
+
+				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
+					if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k < mt->minRep) { // capturing
+						m.cap = 1;
+						moves[j++] = m;
+						m.cap = 0;
+					}
+					std = 0;
+				}
+				else if(!mt->mustCap) {
+					moves[j++] = m;
+				}
 			}
 
-			if (mt->flipX && xMinus && yPlus) { // flipped in X
+			if (flipX && xMinus && yPlus) { // flipped in X
 				m.x1 = p->x - dx;
-				moves[j++] = m;
+				
+				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
+					if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k < mt->minRep) {// capturing
+						m.cap = 1;
+						moves[j++] = m;
+						m.cap = 0;
+					}
+					flipX = 0;
+				}
+				else if (!mt->mustCap) {
+					moves[j++] = m;
+				}
 			}
-			if (mt->flipY && yMinus) { // flipped in Y
+			if (flipY && yMinus) { // flipped in Y
 				if (xPlus) {
 					
 					m.x1 = p->x + dx;
 					m.y1 = p->y - dy;
-					moves[j++] = m;
-				}
 
-				if (mt->flipX && xMinus) { // filpped in X and Y
-					m.x1 = p->x - dx;
+					if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
+						if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k < mt->minRep) {// capturing
+							m.cap = 1;
+							moves[j++] = m;
+							m.cap = 0;
+						}
+						flipY = 0;
+					}
+					else if (!mt->mustCap) {
+						moves[j++] = m;
+					}
+				}
+			}
+			if (flipXY && xMinus && yMinus) {
+				m.x1 = p->x - dx;
+				m.y1 = p->y - dy;
+				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
+					if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k < mt->minRep) {
+						m.cap = 1;
+						moves[j++] = m;
+						m.cap = 0;
+					}
+					flipXY = 0;
+				}
+				else if (!mt->mustCap) {
 					moves[j++] = m;
 				}
 			}
