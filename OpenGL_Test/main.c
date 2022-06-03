@@ -21,6 +21,11 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 
 _BOARD* b;
 
+char selected = 0;
+char turn;
+int selectedX = 0;
+int selectedY = 0;
+
 int main()
 {
     srand(time(0));
@@ -322,11 +327,30 @@ int fillBufferFromBoard(_BOARD* b, unsigned int vbo) {
             nPieces++;
     }
 
-    int* result = (int*)malloc(nPieces * 3 * sizeof(int));
+    int nMoves = 0;
+    MOVE* moves = NULL;
+    if (&b->pieces[b->squares[selectedY * 8 + selectedX] & 0b1111111] && selected) {
+        moves = getPossibleMoves(&b->pieces[b->squares[selectedY * 8 + selectedX] & 0b1111111], b);
+        if (moves) {
+            while (moves[nMoves++].valid);
+            nMoves--;
+        }
+    }
+
+    int* result = (int*)malloc((nPieces + nMoves) * 3 * sizeof(int));
     if (!result)
         return 0;
 
     int j = 0;
+    if (moves) {
+        while (moves[j].valid) {
+            result[j * 3] = moves[j].x1;
+            result[j * 3 + 1] = moves[j].y1;
+            result[j * 3 + 2] = moves[j].cap ? 14 : 12;
+            j++;
+        }
+    }
+
     for (size_t i = 0; i < b->nPieces; i++)
     {
         if (b->pieces[i].present) {
@@ -340,23 +364,25 @@ int fillBufferFromBoard(_BOARD* b, unsigned int vbo) {
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, nPieces * 12, result, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, (nPieces + nMoves) * 12, result, GL_DYNAMIC_DRAW);
 
     free(result);
 
-    return nPieces;
+    return nPieces + nMoves;
 }
 
 int t;
 
 int mouseX = 0, mouseY = 0;
 
-int turn = 0;
-
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        MOVE* moves = NULL;
+        selectedX = mouseX / 100;
+        selectedY = 7 - mouseY / 100;
+        printf("(%d, %d)\n", selectedX, selectedY);
+        selected = b->squares[8 * selectedY + selectedX] && b->pieces[b->squares[8 * selectedY + selectedX] & 0b1111111].col == turn;
+        /*MOVE* moves = NULL;
         int nMoves = 0;
         while (1) {
             PIECE* randPiece = &b->pieces[rand() % b->nPieces];
@@ -377,9 +403,22 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 turn ^= 1;
                 break;
             }
+        }*/
+    }
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+        if (selected) {
+            MOVE* moves = getPossibleMoves(&b->pieces[b->squares[selectedY * 8 + selectedX] & 0b1111111], b);
+            int i = -1;
+            while (moves[++i].valid) {
+                int x = mouseX / 100;
+                int y = 7 - mouseY / 100;
+                if ((moves[i].x1 == x) && (moves[i].y1 == y)) {
+                    _move(b, moves + i);
+                    selected = 0;
+                    turn ^= 1;
+                }
+            }
         }
-
-        
     }
 }
 

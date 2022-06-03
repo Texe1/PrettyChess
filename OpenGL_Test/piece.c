@@ -107,12 +107,12 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard) {
 				}
 			}
 
-			if (flipXY && xMinus && yMinus) {
+			if (flipXY && xMinus && yMinus) { // flipped in X and Y
 				m.x1 = p->x - dx;
 				m.y1 = p->y - dy;
 
 				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
-					if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k < mt->minRep) {
+					if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k >= mt->minRep) {
 						m.cap = 1;
 						moves[j++] = m;
 						m.cap = 0;
@@ -166,10 +166,32 @@ int _move(void* b, MOVE* m) {
 		}
 		else if(m->cap) {
 			board->game.doFunnyMove(&board->pieces[board->squares[m->y0 * 8 +m->x0] & 0b1111111], board, m);
-			// TODO implement funnyMoves
 		}
 		board->squares[destIndex] = board->squares[index];
 		board->squares[index] = 0;
+
+		// saving move
+		if (board->nMoves % 10 == 0) {
+			if (board->nMoves == 0) {
+				board->moves = (MOVE*)malloc(10 * sizeof(MOVE));
+				if (!board->moves) {
+					printf("FATAL ERROR: HAVING PROBLEMS WITH HEAP ALLOCATION");
+					exit(1);
+				}
+			}
+			else 
+			{
+				MOVE* realloced = (MOVE*)realloc(board->moves, sizeof(MOVE) * (board->nMoves + 10));
+				if (!realloced) {
+					printf("FATAL ERROR: HAVING PROBLEMS WITH HEAP ALLOCATION");
+					exit(1);
+				}
+				board->moves = realloced;
+			}
+		}
+		
+
+		board->moves[board->nMoves++] = *m;
 
 		printf("Made move: (%d, %d) -> (%d,%d), valid:%d\n", m->x0, m->y0, m->x1, m->y1, m->valid);
 

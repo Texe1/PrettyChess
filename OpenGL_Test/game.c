@@ -248,7 +248,7 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
 		moves[0].x0 = piece->x;
 		moves[0].y0 = piece->y;
 		moves[0].x1 = lastMove->x1;
-		moves[0].y1 = piece->x + (piece->col ? 1 : -1);
+		moves[0].y1 = piece->y + (piece->col ? -1 : 1);
 
 		moves[1].valid = 0;
 
