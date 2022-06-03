@@ -262,9 +262,9 @@ void doFunnyMoveStd(PIECE* piece, struct _BOARD* board, MOVE* move) {
 	if (piece->ptemplate->abbreviation == 'P') {
 		if (!board->squares[move->y1 * 8 + move->x1]) { // probably en passant
 			if (abs(move->x1 - move->x0) == 1 && abs(move->y0 - move->y1) == 1 && (board->squares[move->y0 * 8 + move->x1] && board->pieces[board->squares[move->y0 * 8 + move->x1] & 0b1111111].ptemplate->abbreviation == 'P')) { // definetely En passant
-				/*board->squares[move->y1 * 8 + move->x1] = board->squares[move->y0 * 8 + move->x0];
-				board->squares[move->y0 * 8 + move->x0] = 0;*/
+				board->pieces[board->squares[move->y0 * 8 + move->x1] & 0b1111111].present = 0;
 				board->squares[move->y0 * 8 + move->x1] = 0;
+				
 			}
 		}
 	}

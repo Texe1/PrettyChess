@@ -136,17 +136,6 @@ int main()
         0, 1, 3, 3, 2, 0
     };
 
-    float verticesWhiteKing[] = {
-    -.97f, -.97f, 1.0f, 0.0f, 0.0f, 0, 1,
-    -.97f, -.78f, 0.0f, 1.0f, 0.0f, 0, 0,
-    -.78f, -.97f, 0.0f, 0.0f, 1.0f, 1, 1,
-    -.78f, -.78f, 0.0f, 0.0f, 1.0f,  1, 0
-    };
-
-    unsigned int elementsWhiteKing[] = {
-        0, 1, 3, 3, 2, 0
-    };
-
     unsigned int BoardVbo;
     glGenBuffers(1, &BoardVbo);
     glBindBuffer(GL_ARRAY_BUFFER, BoardVbo);
@@ -155,20 +144,6 @@ int main()
     unsigned int ebo;
     glGenBuffers(1, &ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
-
-    unsigned int whKingVao;
-    glGenVertexArrays(1, &whKingVao);
-    glBindVertexArray(whKingVao);
-
-    unsigned int whKingVbo;
-    glGenBuffers(1, &whKingVbo);
-    glBindBuffer(GL_ARRAY_BUFFER, whKingVbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), verticesWhiteKing, GL_STATIC_DRAW);
-
-    unsigned int whKingEbo;
-    glGenBuffers(1, &whKingEbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, whKingEbo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
 
     glBindVertexArray(boardVao);
