@@ -55,7 +55,7 @@ typedef struct PIECE {
 		present	: 1;
 } PIECE;
 
-MOVE* getPossibleMoves(PIECE* p, void* pBoard);
+MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck);
 
 inline int getMaxMoveCount(MOVE_TEMPLATE*);
 

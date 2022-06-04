@@ -16,6 +16,7 @@ _BOARD* createStdBoard() {
 		board->game.pieceTypes[0].name = "KING";
 		board->game.pieceTypes[0].abbreviation = 'K';
 		board->game.pieceTypes[0].moves = (MOVE_TEMPLATE*)(board->game.pieceTypes + 6);
+		board->game.pieceTypes[0].king = 1;
 
 		board->game.pieceTypes[0].nMoves = 3;
 
@@ -43,6 +44,7 @@ _BOARD* createStdBoard() {
 		board->game.pieceTypes[1].name = "QUEEN";
 		board->game.pieceTypes[1].abbreviation = 'Q';
 		board->game.pieceTypes[1].moves = ((MOVE_TEMPLATE*)(board->game.pieceTypes + 6)) + 3;
+		board->game.pieceTypes[1].king = 0;
 
 		board->game.pieceTypes[1].nMoves = 3;
 
@@ -70,6 +72,7 @@ _BOARD* createStdBoard() {
 		board->game.pieceTypes[2].name = "ROOK";
 		board->game.pieceTypes[2].abbreviation = 'R';
 		board->game.pieceTypes[2].moves = ((MOVE_TEMPLATE*)(board->game.pieceTypes + 6)) + 6;
+		board->game.pieceTypes[2].king = 0;
 
 		board->game.pieceTypes[2].nMoves = 2;
 
@@ -92,6 +95,7 @@ _BOARD* createStdBoard() {
 		board->game.pieceTypes[3].name = "KNIGHT";
 		board->game.pieceTypes[3].abbreviation = 'N';
 		board->game.pieceTypes[3].moves = ((MOVE_TEMPLATE*)(board->game.pieceTypes + 6)) + 8;
+		board->game.pieceTypes[3].king = 0;
 
 		board->game.pieceTypes[3].nMoves = 2;
 
@@ -113,6 +117,7 @@ _BOARD* createStdBoard() {
 		board->game.pieceTypes[4].name = "BISHOP";
 		board->game.pieceTypes[4].abbreviation = 'B';
 		board->game.pieceTypes[4].moves = ((MOVE_TEMPLATE*)(board->game.pieceTypes + 6)) + 10;
+		board->game.pieceTypes[4].king = 0;
 
 		board->game.pieceTypes[4].nMoves = 1;
 
@@ -131,6 +136,7 @@ _BOARD* createStdBoard() {
 		board->game.pieceTypes[5].name = "PAWN";
 		board->game.pieceTypes[5].abbreviation = 'P';
 		board->game.pieceTypes[5].moves = ((MOVE_TEMPLATE*)(board->game.pieceTypes + 6)) + 11;
+		board->game.pieceTypes[5].king = 0;
 
 		board->game.pieceTypes[5].nMoves = 3;
 

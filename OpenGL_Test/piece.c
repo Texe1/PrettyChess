@@ -1,7 +1,10 @@
 #include "piece.h"
-#include "game.h"
 
-MOVE* getPossibleMoves(PIECE* p, void* pBoard) {
+#include "game.h"
+#include <Windows.h>
+#include <stdio.h>
+
+MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck) {
 	_BOARD* board = (_BOARD*)pBoard;
 
 	// calculating maximum possible moves and allocating heap space
@@ -137,8 +140,115 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard) {
 		free(funnyMoves);
 	}
 
-	moves[j].valid = 0;
+	if (checkCheck) {
+		_BOARD* duplicate = (_BOARD*)malloc(sizeof(_BOARD));
+		if (!duplicate) {
+			moves[j].valid = 0; // continuing without checkCheck
+			return moves;
+		}
 
+		*duplicate = *board;
+		duplicate->moves = (MOVE*)malloc((board->nMoves + 10) * sizeof(MOVE));
+		if (!duplicate->moves) {
+			free(duplicate);
+			moves[j].valid = 0; // continuing without checkCheck
+			return moves;
+		}
+
+		duplicate->pieces = (PIECE*)malloc(board->nPieces * sizeof(PIECE));
+		if (!duplicate->pieces) {
+			free(duplicate->moves);
+			free(duplicate);
+			moves[j].valid = 0; // continuing without checkCheck
+			return moves;
+		}
+
+		for (size_t i = 0; i < board->nMoves; i++)
+		{
+			duplicate->moves[i] = board->moves[i];
+		}
+
+		for (size_t i = 0; i < board->nPieces; i++)
+		{
+			duplicate->pieces[i] = board->pieces[i];
+		}
+
+		MOVE* m = moves;
+		// filtering moves
+		for (size_t i = 0; i < j; i++)
+		{
+ 			_move(duplicate, m);
+			// checkCheck is happening here
+
+
+			PIECE* piece = duplicate->pieces;
+			// looping through all pieces
+			for (size_t i = 0; i < duplicate->nPieces; i++)
+			{
+				if ((piece->col == p->col) || !piece->present) { // own or not present pieces can't capture the King
+					piece++;
+					continue;
+				}
+
+				// getting possible moves for this piece
+				MOVE* theoreticalMoves = getPossibleMoves(piece, duplicate, 0);
+
+				for (MOVE* move = theoreticalMoves; move->valid; move++)
+				{
+					PIECE* capturedPiece = duplicate->pieces + (duplicate->squares[move->y1 * 8 + move->x1] & 0b1111111);
+					if (move->cap && capturedPiece->ptemplate->king && capturedPiece->col == p->col) {
+						printf("\rthis Move by '%s' could then capture '%s': (%d, %d)->(%d, %d), %d", duplicate->pieces[duplicate->squares[piece->y * 8 + piece->x] & 0b1111111].ptemplate->name, capturedPiece->ptemplate->name, move->x0, move->y0, move->x1, move->y1, piece->present);
+						m->valid = 0;
+						break;
+					}
+				}
+
+				if (!m->valid)
+					break;
+
+				piece++;
+			}
+
+			// reversing to actual board
+			if (!m->cap) { // there is no need to copy all pieces again, we only need to set back the moved piece (also no funnyMoves) TODO castling (funnyMove bit?)
+				PIECE* piece = &duplicate->pieces[duplicate->squares[m->y1 * 8 + m->x1] & 0b1111111];
+				duplicate->squares[m->y0 * 8 + m->x0] = duplicate->squares[m->y1 * 8 + m->x1];
+				duplicate->squares[m->y1 * 8 + m->x1] = 0;
+			}
+			else { // recpoying pieces and decrementing nMoves because I won't deal with En passant
+				duplicate->nMoves--;
+				for (size_t j = 0; j < duplicate->nPieces; j++)
+				{
+					duplicate->pieces[j] = board->pieces[j];
+				}
+				for (size_t j = 0; j < 64; j++)
+				{
+					duplicate->squares[j] = board->squares[j];
+				}
+			}
+			m++;
+		}
+
+		// shifting moves so that there are no invalid moves
+ 		for (size_t k = 0; k < j; k++)
+		{
+			if (!moves[k].valid) {
+				j--;
+				for (size_t l = k; l < j; l++)
+				{
+					moves[l] = moves[l + 1];
+				}
+				k--;
+			}
+			
+		}
+
+		free(duplicate->moves);
+		free(duplicate->pieces);
+		free(duplicate);
+	}
+
+	moves[j].valid = 0;
 	return moves;
 
 }
