@@ -18,6 +18,9 @@ typedef struct _BOARD {
 	MOVE* moves;
 	unsigned char nPieces;
 	PIECE* pieces;
+	unsigned char 
+		evolve		: 1, // if evolve is possible
+		evolveIndex	: 6; // on which square it is happening
 } _BOARD;
 
 _BOARD* createStdBoard();

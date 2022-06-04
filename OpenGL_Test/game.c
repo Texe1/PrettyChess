@@ -13,6 +13,7 @@ _BOARD* createStdBoard() {
 
 	// King		(0)
 	{
+		board->game.pieceTypes[0] = (PIECE_TEMPLATE){ 0 };
 		board->game.pieceTypes[0].name = "KING";
 		board->game.pieceTypes[0].abbreviation = 'K';
 		board->game.pieceTypes[0].moves = (MOVE_TEMPLATE*)(board->game.pieceTypes + 6);
@@ -41,6 +42,7 @@ _BOARD* createStdBoard() {
 
 	// Queen	(1)
 	{
+		board->game.pieceTypes[1] = (PIECE_TEMPLATE){ 0 };
 		board->game.pieceTypes[1].name = "QUEEN";
 		board->game.pieceTypes[1].abbreviation = 'Q';
 		board->game.pieceTypes[1].moves = ((MOVE_TEMPLATE*)(board->game.pieceTypes + 6)) + 3;
@@ -69,6 +71,7 @@ _BOARD* createStdBoard() {
 
 	// Rook		(2)
 	{
+		board->game.pieceTypes[2] = (PIECE_TEMPLATE){ 0 };
 		board->game.pieceTypes[2].name = "ROOK";
 		board->game.pieceTypes[2].abbreviation = 'R';
 		board->game.pieceTypes[2].moves = ((MOVE_TEMPLATE*)(board->game.pieceTypes + 6)) + 6;
@@ -92,6 +95,7 @@ _BOARD* createStdBoard() {
 
 	// Knight	(3)
 	{
+		board->game.pieceTypes[3] = (PIECE_TEMPLATE){ 0 };
 		board->game.pieceTypes[3].name = "KNIGHT";
 		board->game.pieceTypes[3].abbreviation = 'N';
 		board->game.pieceTypes[3].moves = ((MOVE_TEMPLATE*)(board->game.pieceTypes + 6)) + 8;
@@ -114,6 +118,7 @@ _BOARD* createStdBoard() {
 
 	// Bishop	(4)
 	{
+		board->game.pieceTypes[4] = (PIECE_TEMPLATE){ 0 };
 		board->game.pieceTypes[4].name = "BISHOP";
 		board->game.pieceTypes[4].abbreviation = 'B';
 		board->game.pieceTypes[4].moves = ((MOVE_TEMPLATE*)(board->game.pieceTypes + 6)) + 10;
@@ -133,6 +138,7 @@ _BOARD* createStdBoard() {
 
 	// Pawn		(5)
 	{
+		board->game.pieceTypes[5] = (PIECE_TEMPLATE){ 0 };
 		board->game.pieceTypes[5].name = "PAWN";
 		board->game.pieceTypes[5].abbreviation = 'P';
 		board->game.pieceTypes[5].moves = ((MOVE_TEMPLATE*)(board->game.pieceTypes + 6)) + 11;
@@ -163,6 +169,11 @@ _BOARD* createStdBoard() {
 		move.yDir = 1;
 		move.init = 1;
 		board->game.pieceTypes[5].moves[2] = move;
+
+		board->game.pieceTypes[5].evolveable = 1;
+		board->game.pieceTypes[5].evolveAtX = 1 << 3;
+		board->game.pieceTypes[5].evolveAtY = 7;
+		board->game.pieceTypes[5].evolveInto = 0b11110;
 	}
 
 	setStartingPos(&board->game, "RNBQKBNRPPPPPPPP8888pppppppprnbqkbnr");
@@ -259,7 +270,151 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
 		moves[1].valid = 0;
 
 		return moves;
+
 	}
+
+	//castle
+
+	if ((piece->ptemplate->abbreviation == 'K') //piece is a King 
+		&& (piece->moved == 0)) {
+
+
+		MOVE* moves = (MOVE*)malloc(sizeof(MOVE) * 3);
+		if (!moves)
+			return NULL;
+
+		int j = 0;
+		if (!(board->squares[piece->col * 56 + 1]) && !(board->squares[piece->col * 56 + 2]) && !(board->squares[piece->col * 56 + 3]) && (!board->pieces[piece->col * 24].moved)) { //big castles
+
+			_BOARD* duplicate = (_BOARD*)malloc(sizeof(_BOARD));
+			if (!duplicate) {
+				moves[0].valid = 0; // continuing without checkCheck
+				return moves;
+			}
+
+			*duplicate = *board;
+
+			duplicate->pieces = (PIECE*)malloc(board->nPieces * sizeof(PIECE));
+			if (!duplicate->pieces) {
+				free(duplicate->moves);
+				free(duplicate);
+				moves[0].valid = 0; // continuing without checkCheck
+				return moves;
+			}
+
+			duplicate->nMoves = 0;
+
+			for (size_t i = 0; i < board->nPieces; i++)
+				duplicate->pieces[i] = board->pieces[i];
+
+
+			moves[0] = (MOVE){ 0 };
+			moves[0].y0 = piece->col * 7;
+			moves[0].y1 = piece->col * 7;
+			moves[0].x0 = 4;
+			moves[0].x1 = 2;
+			moves[0].valid = 1;
+
+			_move(duplicate, moves);
+
+			// checkCheck is happening here
+
+
+			PIECE* p = duplicate->pieces;
+			// looping through all pieces
+			for (size_t i = 0; i < duplicate->nPieces; i++)
+			{
+				if ((p->col == piece->col) || !p->present) { // own or not present pieces can't capture the King
+					p++;
+					continue;
+				}
+
+				// getting possible moves for this piece
+				MOVE* theoreticalMoves = getPossibleMoves(p, duplicate, 0);
+
+				for (MOVE* move = theoreticalMoves; move->valid; move++)
+				{
+					if (move->y1 == (piece->col * 7) && (move->x1 == 2 || move->x1 == 3 || move->x1 == 4)) {
+						return NULL;
+						break;
+					}
+				}
+
+				p++;
+			}
+
+			moves[j++].funny = 1;
+
+		}
+		if (!(board->squares[piece->col * 56 + 5]) && !(board->squares[piece->col * 56 + 6]) && (!board->pieces[piece->col * 24 + 7].moved)) { //big castles
+
+			_BOARD* duplicate = (_BOARD*)malloc(sizeof(_BOARD));
+			if (!duplicate) {
+				moves[j].valid = 0; // continuing without checkCheck
+				return moves;
+			}
+
+			*duplicate = *board;
+
+			duplicate->pieces = (PIECE*)malloc(board->nPieces * sizeof(PIECE));
+			if (!duplicate->pieces) {
+				free(duplicate->moves);
+				free(duplicate);
+				moves[j].valid = 0; // continuing without checkCheck
+				return moves;
+			}
+
+			duplicate->nMoves = 0;
+
+			for (size_t i = 0; i < board->nPieces; i++)
+				duplicate->pieces[i] = board->pieces[i];
+
+
+			moves[j] = (MOVE){ 0 };
+			moves[j].y0 = piece->col * 7;
+			moves[j].y1 = piece->col * 7;
+			moves[j].x0 = 4;
+			moves[j].x1 = 6;
+			moves[j].valid = 1;
+
+			_move(duplicate, moves + j);
+
+			// checkCheck is happening here
+
+
+			PIECE* p = duplicate->pieces;
+			// looping through all pieces
+			for (size_t i = 0; i < duplicate->nPieces; i++)
+			{
+				if ((p->col == piece->col) || !p->present) { // own or not present pieces can't capture the King
+					p++;
+					continue;
+				}
+
+				// getting possible moves for this piece
+				MOVE* theoreticalMoves = getPossibleMoves(p, duplicate, 0);
+
+				for (MOVE* move = theoreticalMoves; move->valid; move++)
+				{
+					if (move->y1 == (piece->col * 7) && (move->x1 == 5 || move->x1 == 6)) {
+						return NULL;
+						break;
+					}
+				}
+
+				p++;
+			}
+
+			free(duplicate->pieces);
+			free(duplicate);
+
+			moves[j++].funny = 1;
+		}
+		
+		moves[j].valid = 0;
+		return moves;
+	}
+
 
 	return NULL;
 }
@@ -271,6 +426,31 @@ void doFunnyMoveStd(PIECE* piece, struct _BOARD* board, MOVE* move) {
 				board->pieces[board->squares[move->y0 * 8 + move->x1] & 0b1111111].present = 0;
 				board->squares[move->y0 * 8 + move->x1] = 0;
 			}
+		}
+	}
+	else if(piece->ptemplate->abbreviation == 'K') // castling
+	{
+		switch (move->x1)
+		{
+		case 2:{
+			board->squares[3 + piece->col * 56] = board->squares[piece->col * 56];
+			board->squares[piece->col * 56] = 0;
+
+			board->pieces[24 * piece->col].x = 3;
+			board->pieces[24 * piece->col].moved = 1;
+			
+		}
+		case 6: {
+
+			board->squares[5 + piece->col * 56] = board->squares[7+ piece->col * 56];
+			board->squares[7 + piece->col * 56] = 0;
+
+			board->pieces[24 * piece->col + 7].x = 5;
+			board->pieces[24 * piece->col + 7].moved = 1;
+
+		}
+		default:
+			break;
 		}
 	}
 }

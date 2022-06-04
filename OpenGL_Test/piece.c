@@ -197,7 +197,6 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck) {
 				{
 					PIECE* capturedPiece = duplicate->pieces + (duplicate->squares[move->y1 * 8 + move->x1] & 0b1111111);
 					if (move->cap && capturedPiece->ptemplate->king && capturedPiece->col == p->col) {
-						printf("\rthis Move by '%s' could then capture '%s': (%d, %d)->(%d, %d), %d", duplicate->pieces[duplicate->squares[piece->y * 8 + piece->x] & 0b1111111].ptemplate->name, capturedPiece->ptemplate->name, move->x0, move->y0, move->x1, move->y1, piece->present);
 						m->valid = 0;
 						break;
 					}
@@ -261,8 +260,6 @@ int _move(void* b, MOVE* m) {
 
 	_BOARD* board = (_BOARD*)b;
 
-	
-
 	int index = m->y0 * 8 + m->x0;
 	if (board->squares[index]) {
 		print_board(board, 0);
@@ -271,14 +268,28 @@ int _move(void* b, MOVE* m) {
 		board->pieces[board->squares[index] & 0b1111111].x = m->x1;
 		board->pieces[board->squares[index] & 0b1111111].y = m->y1;
 		board->pieces[board->squares[index] & 0b1111111].moved = 1;
-		if (m->cap && board->squares[destIndex]) {
+		if (m->cap && board->squares[destIndex] && !m->funny) {
 			board->pieces[board->squares[destIndex] & 0b1111111].present = 0;
+			if (board->pieces[board->squares[destIndex] & 0b1111111].ptemplate->abbreviation == 'Q') {
+				;
+			}
 		}
-		else if(m->cap) {
+		else if(m->cap || m->funny) {
 			board->game.doFunnyMove(&board->pieces[board->squares[m->y0 * 8 +m->x0] & 0b1111111], board, m);
 		}
 		board->squares[destIndex] = board->squares[index];
 		board->squares[index] = 0;
+
+		PIECE* piece = &board->pieces[board->squares[destIndex] & 0b1111111];
+
+		// evolving
+		if (piece->ptemplate->evolveable) {
+			if ((piece->ptemplate->evolveAtX == 1 << 3 || piece->ptemplate->evolveAtX == destIndex % 8)
+				&& (piece->ptemplate->evolveAtY == 1 << 3 || piece->ptemplate->evolveAtY == (piece->col ? (7 - destIndex / 8) : (destIndex / 8)))) {
+				board->evolve = 1;
+				board->evolveIndex = destIndex;
+			}
+		}
 
 		// saving move
 		if (board->nMoves % 10 == 0) {
@@ -310,4 +321,12 @@ int _move(void* b, MOVE* m) {
 		return 0;
 	}
 	else return 1;
+}
+
+void evolve(void* b, int type) {
+	_BOARD* board = (_BOARD*)b;
+	if ((board->evolve) && (board->pieces[board->squares[board->evolveIndex] & 0b1111111].ptemplate->evolveable) && (board->pieces[board->squares[board->evolveIndex] & 0b1111111].ptemplate->evolveInto & (1 << type))) {
+		board->pieces[board->squares[board->evolveIndex] & 0b1111111].ptemplate = &board->game.pieceTypes[type];
+		board->evolve = 0;
+	}
 }

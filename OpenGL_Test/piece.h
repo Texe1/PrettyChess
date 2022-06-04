@@ -32,6 +32,7 @@ typedef struct MOVE {
 		x1		: 3,
 		y1		: 3,
 		cap		: 1,
+		funny	: 1,
 		valid	: 1;
 } MOVE;
 
@@ -42,7 +43,12 @@ typedef struct PIECE_TEMPLATE {
 	char abbreviation;
 	unsigned char 
 		king		: 1,
-		multiKing	: 1; // for funny game modes with multiple King pieces :)
+		multiKing	: 1, // for funny game modes with multiple King pieces :)
+		evolveable	: 1,
+		evolveAtX	: 4, // 1 << 3 for arbitrary
+		evolveAtY	: 4; // 1 << 3 for arbitrary
+
+	unsigned long evolveInto;
 } PIECE_TEMPLATE;
 
 typedef struct PIECE {
@@ -52,7 +58,7 @@ typedef struct PIECE {
 		y		: 3,
 		col		: 1,
 		moved	: 1,
-		present	: 1;
+		present : 1;
 } PIECE;
 
 MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck);
@@ -60,3 +66,5 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck);
 inline int getMaxMoveCount(MOVE_TEMPLATE*);
 
 int _move(void*, MOVE*);
+
+void evolve(void* board, int type);

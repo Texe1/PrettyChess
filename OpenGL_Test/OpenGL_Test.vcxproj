@@ -140,7 +140,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="board.c" />
     <ClCompile Include="game.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="piece.c" />
@@ -150,7 +149,6 @@
     <None Include="piecesShader.frag" />
     <None Include="piecesShader.geom" />
     <None Include="basicShader.vert" />
-    <None Include="Chess_Pieces.svg" />
     <None Include="piecesShader.vert" />
   </ItemGroup>
   <ItemGroup>
@@ -158,7 +156,6 @@
     <Image Include="Chess_Pieces.png" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="board.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="piece.h" />
     <ClInclude Include="stb_image.h" />

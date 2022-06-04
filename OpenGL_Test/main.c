@@ -13,6 +13,9 @@
 #include "piece.h"
 #include "game.h"
 
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+
 unsigned int loadShader(char* fileName);
 unsigned int loadTexture(const char* fileName);
 int fillBufferFromBoard(_BOARD* board, unsigned int vbo);
@@ -209,6 +212,27 @@ int main()
         glBindVertexArray(piecesVao);
         glUseProgram(piecesShaderProgram);
 
+        if (b->evolve) {
+            while (1) {
+                if (MessageBox(glfwGetWin32Window(window), L"Entwickeln", L"Dame entwickeln?", MB_YESNO) != 7) {
+                    evolve(b, 1);
+                    break;
+                }
+                else if (MessageBox(glfwGetWin32Window(window), L"Entwickeln", L"Springer entwickeln?", MB_YESNO) != 7) {
+                    evolve(b, 3);
+                    break;
+                }
+                else if (MessageBox(glfwGetWin32Window(window), L"Entwickeln", L"Turm entwickeln?", MB_YESNO) != 7) {
+                    evolve(b, 2);
+                    break;
+                }
+                else if (MessageBox(glfwGetWin32Window(window), L"Entwickeln", L"Läufer entwickeln?", MB_YESNO) != 7) {
+                    evolve(b, 4);
+                    break;
+                }
+            }
+        }
+
 
         int nPieces = fillBufferFromBoard(b, piecesVbo);
 
@@ -378,7 +402,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         if (selected) {
             if (possibleMoves)
                 free(possibleMoves);
+            long t = clock();
             possibleMoves = getPossibleMoves(&b->pieces[b->squares[8 * selectedY + selectedX] & 0b1111111], b, 1);
+            t = clock() - t;
+            printf("Got all possiple moves in %lu ms", t);
             nPossibleMoves = 0;
             while (possibleMoves[nPossibleMoves++].valid);
             nPossibleMoves--;
@@ -414,7 +441,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
     }
     else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
         if (selected) {
-            //MOVE* moves = getPossibleMoves(&b->pieces[b->squares[selectedY * 8 + selectedX] & 0b1111111], b, 1);
             int i = -1;
             while (possibleMoves[++i].valid) {
                 int x = mouseX / 100;
