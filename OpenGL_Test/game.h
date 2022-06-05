@@ -25,6 +25,9 @@ typedef struct _BOARD {
 	unsigned char end;
 	unsigned char wh_pieceCount;
 	unsigned char bl_pieceCount;
+
+	unsigned long nPositions;
+	unsigned char* positions;
 } _BOARD;
 
 _BOARD* createStdBoard();
@@ -40,3 +43,7 @@ void doFunnyMoveStd(PIECE*, struct _BOARD*, MOVE*);
 int isDrawStd(struct _BOARD*);
 
 void print_board(_BOARD* board, int y);
+
+void savePos(_BOARD* board);
+
+void freeBoard(_BOARD* board);

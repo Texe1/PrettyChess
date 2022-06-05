@@ -65,6 +65,6 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck);
 
 inline int getMaxMoveCount(MOVE_TEMPLATE*);
 
-int _move(void*, MOVE*);
+int _move(void*, MOVE*, char save);
 
 void evolve(void* board, int type);

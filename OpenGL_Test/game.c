@@ -177,7 +177,6 @@ _BOARD* createStdBoard() {
 	}
 
 	setStartingPos(&board->game, "RNBQKBNRPPPPPPPP8888pppppppprnbqkbnr");
-	//setStartingPos(&board->game, "K6R8888881rk5");
 
 	board->game.funnyMoves = funnyMovesStd;
 	board->game.doFunnyMove = doFunnyMoveStd;
@@ -227,7 +226,8 @@ void startGame(_BOARD* board) {
 				break;
 		}
 	}
-	
+
+	savePos(board);
 }
 
 void setStartingPos(GAME* game, const char* pos) {// sets the starting position of a game
@@ -323,7 +323,7 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
 			moves[0].x1 = 2;
 			moves[0].valid = 1;
 
-			_move(duplicate, moves);
+			_move(duplicate, moves, 0);
 
 			// checkCheck is happening here
 
@@ -385,7 +385,7 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
 			moves[j].x1 = 6;
 			moves[j].valid = 1;
 
-			_move(duplicate, moves + j);
+			_move(duplicate, moves + j, 0);
 
 			// checkCheck is happening here
 
@@ -433,6 +433,11 @@ void doFunnyMoveStd(PIECE* piece, struct _BOARD* board, MOVE* move) {
 			if (abs(move->x1 - move->x0) == 1 && abs(move->y0 - move->y1) == 1 && (board->squares[move->y0 * 8 + move->x1] && board->pieces[board->squares[move->y0 * 8 + move->x1] & 0b1111111].ptemplate->abbreviation == 'P')) { // definetely En passant
 				board->pieces[board->squares[move->y0 * 8 + move->x1] & 0b1111111].present = 0;
 				board->squares[move->y0 * 8 + move->x1] = 0;
+				if (piece->col)
+					board->wh_pieceCount--;
+				else
+					board->bl_pieceCount--;
+				board->nPositions = 0;
 			}
 		}
 	}
@@ -485,14 +490,13 @@ void print_board(_BOARD* board, int y) {
 }
 
 int isDrawStd(struct _BOARD* board) {
-	if ((board->bl_pieceCount < 3) && (board->wh_pieceCount < 3)){ //not enough material
-		/*if(		((((board->pieces[1].present) || (board->pieces[2].present) || (board->pieces[5].present) || (board->pieces[6].present)) && (board->wh_pieceCount == 2)) || (board->wh_pieceCount == 1)) //white minor piece is present or white has no other pieces than the king
-			&&	((((board->pieces[25].present) || (board->pieces[26].present) || (board->pieces[29].present) || (board->pieces[30].present)) && (board->bl_pieceCount == 2)) || (board->bl_pieceCount == 1))){ //and black minor piece is present or black has no other pieces than the king
-				return 1;
-			}*/
+	char draw;
 
+	if ((board->bl_pieceCount < 3) && (board->wh_pieceCount < 3)){ //not enough material
 		char bl_NotEnough = 0;
 		char wh_NotEnough = 0;
+
+		draw = 1;
 
 		for (int i = 0; i < board->nPieces; i++){
 			if (board->pieces[i].present && !board->pieces[i].ptemplate->king){
@@ -507,14 +511,71 @@ int isDrawStd(struct _BOARD* board) {
 						wh_NotEnough = 1;
 					}
 				} else {
-					return 0;
+					draw == 0;
+					break;
 				}
 			}
 		}
 
-		return 1;
-	
+		if(draw)
+			return draw;
 	}
 
+	char rocc = 0;
+	for (size_t i = 0; i < board->nPositions - 1 && board->nPositions; i++) //reoccuring position
+	{
+		char c = 1;
+		for (unsigned char j = 0; j < 64; j++)
+		{
+			
+			if (!(board->positions[64 * i + j] == board->positions[(board->nPositions - 1) * 64 + j])){
+				c = 0;
+				break;
+			}
+		}
+
+		if (c)
+			rocc++;
+ 
+	}
+	if (rocc > 1){
+		return 2;
+	}
+
+
 	return 0; //gamestate is not a draw
+}
+
+void savePos(_BOARD* board) {
+	if (!board->nPositions) {
+		if (board->positions)
+			free(board->positions);
+
+		board->positions = (unsigned char*)malloc(64);
+		if (!board->positions)
+			return;
+	}
+	else {
+		unsigned char* realloced = (unsigned char*)realloc(board->positions, 64 * (board->nPositions + 1));
+		if (!realloced)
+			return;
+
+		board->positions = realloced;
+	}
+
+	for (size_t i = 0; i < 64; i++)
+	{
+		board->positions[64 * board->nPositions + i] = board->squares[i] ? (1 << 7 | (unsigned char)(board->pieces[board->squares[i] & 0b1111111].ptemplate - board->game.pieceTypes)) : 0;
+	}
+
+	board->nPositions++;
+}
+
+void freeBoard(_BOARD* board) {
+	if (board) {
+		if (board->moves) free(board->moves);
+		if (board->pieces) free(board->pieces);
+		if (board->positions) free(board->positions);
+		free(board);
+	}
 }

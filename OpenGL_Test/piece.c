@@ -163,6 +163,15 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck) {
 			return moves;
 		}
 
+		//duplicate->positions = (unsigned char*)malloc(board->nPositions * 64);
+		//if (!duplicate->positions) {
+		//	free(duplicate->moves);
+		//	free(duplicate->pieces);
+		//	free(duplicate);
+		//	moves[j].valid = 0; // continuing without checkCheck
+		//	return moves;
+		//}
+
 		for (size_t i = 0; i < board->nMoves; i++)
 		{
 			duplicate->moves[i] = board->moves[i];
@@ -173,11 +182,14 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck) {
 			duplicate->pieces[i] = board->pieces[i];
 		}
 
+		duplicate->nPositions = 0;
+		duplicate->positions = NULL;
+
 		MOVE* m = moves;
 		// filtering moves
 		for (size_t i = 0; i < j; i++)
 		{
- 			_move(duplicate, m);
+ 			_move(duplicate, m, 0);
 			// checkCheck is happening here
 
 
@@ -244,6 +256,8 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck) {
 
 		free(duplicate->moves);
 		free(duplicate->pieces);
+		if(duplicate->positions)
+			free(duplicate->positions);
 		free(duplicate);
 	}
 
@@ -252,11 +266,36 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck) {
 
 }
 
+void testMove(MOVE* move, PIECE_TEMPLATE templ) {
+	MOVE m = *move;
+
+
+	while ((m.y1 - m.y0) % (m.x1 - m.x0) == 0) {
+		m.y1 = ((m.y1 - m.y0) / (m.x1 - m.x0)) + m.y0;
+	}
+
+	while ((m.x1 - m.x0) % (m.y1 - m.y0) == 0) {
+		m.x1 = ((m.x1 - m.x0) / (m.y1 - m.y0)) + m.x0;
+	}
+
+	for (size_t i = 0; i < templ.nMoves; i++)
+	{
+		MOVE_TEMPLATE* mTempl = templ.moves + i;
+		if ((((int)m.x1 - (int)m.x0) == mTempl->xDir || (mTempl->flipX && (((int)m.x1 - (int)m.x0) == mTempl->xDir)))
+			&& (((int)m.y1 - (int)m.y0) == mTempl->yDir || (mTempl->flipY && (((int)m.y1 - (int)m.y0) == mTempl->yDir)))) {
+			move->valid = 1;
+			return;
+		}
+	}
+
+	move->valid = 0;
+}
+
 inline int getMaxMoveCount(MOVE_TEMPLATE* templ) {
 	return templ->maxRep * (templ->flipX ? 2 : 1) * (templ->flipY ? 2 : 1);
 }
 
-int _move(void* b, MOVE* m) {
+int _move(void* b, MOVE* m, char save) {
 
 	_BOARD* board = (_BOARD*)b;
 
@@ -275,6 +314,7 @@ int _move(void* b, MOVE* m) {
 				board->wh_pieceCount--;
 
 			board->pieces[board->squares[destIndex] & 0b1111111].present = 0;
+			board->nPositions = 0;
 
 		}
 		else if(m->cap || m->funny) {
@@ -317,11 +357,13 @@ int _move(void* b, MOVE* m) {
 
 		board->moves[board->nMoves++] = *m;
 
+		if(save) savePos(board);
 		board->end = board->game.isDraw(board); // returns 0 when no draw
 
 		printf("Made move: (%d, %d) -> (%d,%d), valid:%d\n", m->x0, m->y0, m->x1, m->y1, m->valid);
 
 		print_board(board, 10);
+
 
 		return 0;
 	}

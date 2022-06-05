@@ -228,6 +228,12 @@ int main()
                     brk = 1;
                     break;
                 }
+            case 2:
+                if (MessageBox(glfwGetWin32Window(window), L"Remis", L"Stellungswiederholung", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                    brk = 1;
+                    break;
+                }
+
             default:
                 break;
             }
@@ -258,8 +264,7 @@ int main()
     }
     glfwTerminate();
     
-    free(b);
-
+    freeBoard(b);
     return 0;
 }
 
@@ -461,7 +466,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                 int x = mouseX / 100;
                 int y = 7 - mouseY / 100;
                 if ((possibleMoves[i].x1 == x) && (possibleMoves[i].y1 == y)) {
-                    _move(b, possibleMoves + i);
+                    _move(b, possibleMoves + i, 1);
                     if (possibleMoves)
                         free(possibleMoves);
                     possibleMoves = NULL;
