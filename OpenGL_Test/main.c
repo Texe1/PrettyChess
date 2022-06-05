@@ -212,6 +212,28 @@ int main()
         glBindVertexArray(piecesVao);
         glUseProgram(piecesShaderProgram);
 
+
+        int nPieces = fillBufferFromBoard(b, piecesVbo);
+
+        glDrawArrays(GL_POINTS, 0, nPieces);
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+
+        if (b->end) {
+            int brk = 0;
+            switch (b->end)
+            {
+            case 1:
+                if (MessageBox(glfwGetWin32Window(window), L"Remis", L"Nicht genug Material", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                    brk = 1;
+                    break;
+                }
+            default:
+                break;
+            }
+            if (brk) break;
+        }
+
         if (b->evolve) {
             while (1) {
                 if (MessageBox(glfwGetWin32Window(window), L"Entwickeln", L"Dame entwickeln?", MB_YESNO) != 7) {
@@ -233,13 +255,6 @@ int main()
             }
         }
 
-
-        int nPieces = fillBufferFromBoard(b, piecesVbo);
-
-        glDrawArrays(GL_POINTS, 0, nPieces);
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
     }
     glfwTerminate();
     

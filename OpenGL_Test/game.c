@@ -177,9 +177,11 @@ _BOARD* createStdBoard() {
 	}
 
 	setStartingPos(&board->game, "RNBQKBNRPPPPPPPP8888pppppppprnbqkbnr");
+	//setStartingPos(&board->game, "K6R8888881rk5");
 
 	board->game.funnyMoves = funnyMovesStd;
 	board->game.doFunnyMove = doFunnyMoveStd;
+	board->game.isDraw = isDrawStd;
 	board->nMoves = 0;
 
 	startGame(board);
@@ -207,6 +209,12 @@ void startGame(_BOARD* board) {
 
 			PIECE p = { 0 };
 			p.col = (board->game.startPosition[i] & 0x40) != 0;
+
+			if (p.col)
+				board->bl_pieceCount++;
+			else
+				board->wh_pieceCount++;
+
 			p.ptemplate = &board->game.pieceTypes[index];
 			p.x = x;
 			p.y = y;
@@ -284,7 +292,7 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
 			return NULL;
 
 		int j = 0;
-		if (!(board->squares[piece->col * 56 + 1]) && !(board->squares[piece->col * 56 + 2]) && !(board->squares[piece->col * 56 + 3]) && (!board->pieces[piece->col * 24].moved)) { //big castles
+		if (!(board->squares[piece->col * 56 + 1]) && !(board->squares[piece->col * 56 + 2]) && !(board->squares[piece->col * 56 + 3]) && (!board->pieces[piece->col * 24].moved) && (board->pieces[piece->col * 24].present)) { //big castles
 
 			_BOARD* duplicate = (_BOARD*)malloc(sizeof(_BOARD));
 			if (!duplicate) {
@@ -346,7 +354,7 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
 			moves[j++].funny = 1;
 
 		}
-		if (!(board->squares[piece->col * 56 + 5]) && !(board->squares[piece->col * 56 + 6]) && (!board->pieces[piece->col * 24 + 7].moved)) { //big castles
+		if (!(board->squares[piece->col * 56 + 5]) && !(board->squares[piece->col * 56 + 6]) && (!board->pieces[piece->col * 24 + 7].moved) && (board->pieces[piece->col * 24 + 7].present)) { //small castles
 
 			_BOARD* duplicate = (_BOARD*)malloc(sizeof(_BOARD));
 			if (!duplicate) {
@@ -438,7 +446,7 @@ void doFunnyMoveStd(PIECE* piece, struct _BOARD* board, MOVE* move) {
 
 			board->pieces[24 * piece->col].x = 3;
 			board->pieces[24 * piece->col].moved = 1;
-			
+			break;
 		}
 		case 6: {
 
@@ -447,7 +455,7 @@ void doFunnyMoveStd(PIECE* piece, struct _BOARD* board, MOVE* move) {
 
 			board->pieces[24 * piece->col + 7].x = 5;
 			board->pieces[24 * piece->col + 7].moved = 1;
-
+			break;
 		}
 		default:
 			break;
@@ -474,4 +482,39 @@ void print_board(_BOARD* board, int y) {
 		if (i % 8 == 0)
 			printf("\n");
 	}
+}
+
+int isDrawStd(struct _BOARD* board) {
+	if ((board->bl_pieceCount < 3) && (board->wh_pieceCount < 3)){ //not enough material
+		/*if(		((((board->pieces[1].present) || (board->pieces[2].present) || (board->pieces[5].present) || (board->pieces[6].present)) && (board->wh_pieceCount == 2)) || (board->wh_pieceCount == 1)) //white minor piece is present or white has no other pieces than the king
+			&&	((((board->pieces[25].present) || (board->pieces[26].present) || (board->pieces[29].present) || (board->pieces[30].present)) && (board->bl_pieceCount == 2)) || (board->bl_pieceCount == 1))){ //and black minor piece is present or black has no other pieces than the king
+				return 1;
+			}*/
+
+		char bl_NotEnough = 0;
+		char wh_NotEnough = 0;
+
+		for (int i = 0; i < board->nPieces; i++){
+			if (board->pieces[i].present && !board->pieces[i].ptemplate->king){
+				if ((board->pieces[i].ptemplate->abbreviation == 'N') || (board->pieces[i].ptemplate->abbreviation == 'B')){
+					if (board->pieces[i].col){
+						if (wh_NotEnough) 
+							return 1;
+						bl_NotEnough = 1;
+					}else{
+						if (bl_NotEnough) 
+							 return 1;
+						wh_NotEnough = 1;
+					}
+				} else {
+					return 0;
+				}
+			}
+		}
+
+		return 1;
+	
+	}
+
+	return 0; //gamestate is not a draw
 }

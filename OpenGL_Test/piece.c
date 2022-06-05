@@ -269,10 +269,13 @@ int _move(void* b, MOVE* m) {
 		board->pieces[board->squares[index] & 0b1111111].y = m->y1;
 		board->pieces[board->squares[index] & 0b1111111].moved = 1;
 		if (m->cap && board->squares[destIndex] && !m->funny) {
+			if (board->pieces[board->squares[destIndex] & 0b1111111].col)
+				board->bl_pieceCount--;
+			else
+				board->wh_pieceCount--;
+
 			board->pieces[board->squares[destIndex] & 0b1111111].present = 0;
-			if (board->pieces[board->squares[destIndex] & 0b1111111].ptemplate->abbreviation == 'Q') {
-				;
-			}
+
 		}
 		else if(m->cap || m->funny) {
 			board->game.doFunnyMove(&board->pieces[board->squares[m->y0 * 8 +m->x0] & 0b1111111], board, m);
@@ -313,6 +316,8 @@ int _move(void* b, MOVE* m) {
 		
 
 		board->moves[board->nMoves++] = *m;
+
+		board->end = board->game.isDraw(board); // returns 0 when no draw
 
 		printf("Made move: (%d, %d) -> (%d,%d), valid:%d\n", m->x0, m->y0, m->x1, m->y1, m->valid);
 
