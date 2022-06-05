@@ -163,15 +163,6 @@ MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck) {
 			return moves;
 		}
 
-		//duplicate->positions = (unsigned char*)malloc(board->nPositions * 64);
-		//if (!duplicate->positions) {
-		//	free(duplicate->moves);
-		//	free(duplicate->pieces);
-		//	free(duplicate);
-		//	moves[j].valid = 0; // continuing without checkCheck
-		//	return moves;
-		//}
-
 		for (size_t i = 0; i < board->nMoves; i++)
 		{
 			duplicate->moves[i] = board->moves[i];
@@ -358,7 +349,7 @@ int _move(void* b, MOVE* m, char save) {
 		board->moves[board->nMoves++] = *m;
 
 		if(save) savePos(board);
-		board->end = board->game.isDraw(board); // returns 0 when no draw
+		if(save)board->end = board->game.isDraw(board); // returns 0 when no draw
 
 		printf("Made move: (%d, %d) -> (%d,%d), valid:%d\n", m->x0, m->y0, m->x1, m->y1, m->valid);
 

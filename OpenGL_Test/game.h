@@ -21,7 +21,8 @@ typedef struct _BOARD {
 	PIECE* pieces;
 	unsigned char
 		evolve		: 1, // if evolve is possible
-		evolveIndex	: 6; // on which square it is happening
+		evolveIndex	: 6, // on which square it is happening
+		turn		: 1; 
 	unsigned char end;
 	unsigned char wh_pieceCount;
 	unsigned char bl_pieceCount;

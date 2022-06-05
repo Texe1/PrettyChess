@@ -24,7 +24,6 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
 
 _BOARD* b;
 
-char turn = 0;
 
 char selected = 0;
 int selectedX = 0;
@@ -212,24 +211,65 @@ int main()
         glBindVertexArray(piecesVao);
         glUseProgram(piecesShaderProgram);
 
-
         int nPieces = fillBufferFromBoard(b, piecesVbo);
 
         glDrawArrays(GL_POINTS, 0, nPieces);
         glfwSwapBuffers(window);
         glfwPollEvents();
 
+        unsigned int x = 2300;
+
+        while (--x) {
+            PIECE* randPiece = b->pieces + (rand() % b->nPieces);
+
+            if (!randPiece->present || randPiece->col != b->turn)
+                continue;
+
+            possibleMoves = getPossibleMoves(randPiece, b, 1);
+            if (!possibleMoves)
+                continue;
+
+            nPossibleMoves = 0;
+
+            while (possibleMoves[nPossibleMoves++].valid);
+            nPossibleMoves--;
+
+            if (nPossibleMoves) {
+                MOVE m = possibleMoves[rand() % nPossibleMoves];
+                _move(b, &m, 1);
+                if (b->evolve)
+                    evolve(b, 1);
+                b->turn ^= 1;
+                break;
+            }
+            printf("%d                        ", (int)x);
+        }
+
+        if (x == 0) {
+            b->end = 0;
+            b->nPositions = 0;
+            free(b->positions);
+            free(b->pieces);
+            free(b->moves);
+            startGame(b);
+        }
+
         if (b->end) {
             int brk = 0;
             switch (b->end)
             {
             case 1:
-                if (MessageBox(glfwGetWin32Window(window), L"Remis", L"Nicht genug Material", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                if (MessageBox(glfwGetWin32Window(window), L"Nicht genug Material", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
                     brk = 1;
                     break;
                 }
             case 2:
-                if (MessageBox(glfwGetWin32Window(window), L"Remis", L"Stellungswiederholung", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                if (MessageBox(glfwGetWin32Window(window), L"Stellungswiederholung", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                    brk = 1;
+                    break;
+                }
+            case 3:
+                if (MessageBox(glfwGetWin32Window(window), L"Ein Spieler hat keine legalen Züge", L"Matt/Patt", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
                     brk = 1;
                     break;
                 }
@@ -237,7 +277,13 @@ int main()
             default:
                 break;
             }
-            if (brk) break;
+            b->end = 0;
+            b->nPositions = 0;
+            free(b->positions);
+            free(b->pieces);
+            free(b->moves);
+            startGame(b);
+            //if (brk) break;
         }
 
         if (b->evolve) {
@@ -418,7 +464,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         selectedX = mouseX / 100;
         selectedY = 7 - mouseY / 100;
         printf("(%d, %d)\n", selectedX, selectedY);
-        selected = b->squares[8 * selectedY + selectedX] && b->pieces[b->squares[8 * selectedY + selectedX] & 0b1111111].col == turn;
+        selected = b->squares[8 * selectedY + selectedX] && b->pieces[b->squares[8 * selectedY + selectedX] & 0b1111111].col == b->turn;
         if (selected) {
             if (possibleMoves)
                 free(possibleMoves);
@@ -472,7 +518,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                     possibleMoves = NULL;
                     nPossibleMoves = 0;
                     selected = 0;
-                    turn ^= 1;
+                    b->turn ^= 1;
                     break;
                 }
             }

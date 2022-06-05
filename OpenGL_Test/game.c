@@ -189,11 +189,23 @@ _BOARD* createStdBoard() {
 }
 
 void startGame(_BOARD* board) {
+
+	
+	board->nPieces = 0;
 	for (size_t i = 0; i < 64; i++)
 	{
+		board->squares[i] = 0;
 		if (board->game.startPosition[i])
 			board->nPieces++;
 	}
+
+	board->bl_pieceCount = 0;
+	board->wh_pieceCount = 0;
+	board->moves = NULL;
+	board->positions = NULL;
+	board->nMoves = 0;
+	board->nPositions = 0;
+
 
 	board->pieces = (PIECE*)malloc(sizeof(PIECE) * board->nPieces);
 
@@ -489,7 +501,7 @@ void print_board(_BOARD* board, int y) {
 	}
 }
 
-int isDrawStd(struct _BOARD* board) {
+int isDrawStd(_BOARD* board) {
 	char draw;
 
 	if ((board->bl_pieceCount < 3) && (board->wh_pieceCount < 3)){ //not enough material
@@ -511,8 +523,7 @@ int isDrawStd(struct _BOARD* board) {
 						wh_NotEnough = 1;
 					}
 				} else {
-					draw == 0;
-					break;
+					draw = 0;
 				}
 			}
 		}
@@ -542,6 +553,24 @@ int isDrawStd(struct _BOARD* board) {
 		return 2;
 	}
 
+	int nMoves = 0;
+	MOVE* moves;
+	for (size_t i = 0; i < board->nPieces; i++)
+	{
+		if (board->pieces[i].present && (board->pieces[i].col == board->turn)) {
+			moves = getPossibleMoves(board->pieces + i, board, 1);
+			if (moves && moves[0].valid) {
+				nMoves++;
+				free(moves);
+				break;
+			}
+			if(moves)
+				free(moves);
+		}
+	}
+
+	if (!nMoves)
+		return 3;
 
 	return 0; //gamestate is not a draw
 }
