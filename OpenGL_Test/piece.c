@@ -344,6 +344,9 @@ int _move(void* b, MOVE* m, char save) {
 				board->moves = realloced;
 			}
 		}
+
+
+		board->turn ^= 1;
 		
 
 		board->moves[board->nMoves++] = *m;

@@ -176,7 +176,8 @@ _BOARD* createStdBoard() {
 		board->game.pieceTypes[5].evolveInto = 0b11110;
 	}
 
-	setStartingPos(&board->game, "RNBQKBNRPPPPPPPP8888pppppppprnbqkbnr");
+	//setStartingPos(&board->game, "RNBQKBNRPPPPPPPP8888pppppppprnbqkbnr");
+	setStartingPos(&board->game, "RQK57k888888");
 
 	board->game.funnyMoves = funnyMovesStd;
 	board->game.doFunnyMove = doFunnyMoveStd;
@@ -205,6 +206,7 @@ void startGame(_BOARD* board) {
 	board->positions = NULL;
 	board->nMoves = 0;
 	board->nPositions = 0;
+	board->turn = 0;
 
 
 	board->pieces = (PIECE*)malloc(sizeof(PIECE) * board->nPieces);
@@ -553,24 +555,38 @@ int isDrawStd(_BOARD* board) {
 		return 2;
 	}
 
+	// mate
 	int nMoves = 0;
-	MOVE* moves;
+	MOVE* moves = NULL;
 	for (size_t i = 0; i < board->nPieces; i++)
 	{
 		if (board->pieces[i].present && (board->pieces[i].col == board->turn)) {
 			moves = getPossibleMoves(board->pieces + i, board, 1);
 			if (moves && moves[0].valid) {
 				nMoves++;
-				free(moves);
-				break;
 			}
-			if(moves)
+			if (moves)
 				free(moves);
 		}
 	}
 
-	if (!nMoves)
-		return 3;
+	if (!nMoves) {
+		for (size_t i = 0; i < board->nPieces; i++)
+		{
+			if (board->pieces[i].present && (board->pieces[i].col != board->turn)) {
+				moves = getPossibleMoves(board->pieces + i, board, 1);
+				for (int j = 0; moves && moves[j].valid; j++) {
+					if (board->squares[8 * moves[j].y1 + moves[j].x1] && board->pieces[board->squares[8 * moves[j].y1 + moves[j].x1] & 0b1111111].ptemplate->king) {
+						free(moves);
+						return board->turn ? 5 : 6;
+					}
+				}
+			}
+		}
+		if (moves)
+			free(moves);
+		return board->turn ? 3 : 4;
+	}
 
 	return 0; //gamestate is not a draw
 }
@@ -594,7 +610,7 @@ void savePos(_BOARD* board) {
 
 	for (size_t i = 0; i < 64; i++)
 	{
-		board->positions[64 * board->nPositions + i] = board->squares[i] ? (1 << 7 | (unsigned char)(board->pieces[board->squares[i] & 0b1111111].ptemplate - board->game.pieceTypes)) : 0;
+		board->positions[64 * board->nPositions + i] = board->squares[i] ? (1 << 7 | ((1 << 6) * board->pieces[board->squares[i] & 0b1111111].col) | (unsigned char)(board->pieces[board->squares[i] & 0b1111111].ptemplate - board->game.pieceTypes)) : 0;
 	}
 
 	board->nPositions++;

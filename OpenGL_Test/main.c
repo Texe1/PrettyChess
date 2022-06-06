@@ -219,7 +219,7 @@ int main()
 
         unsigned int x = 2300;
 
-        while (--x) {
+        /*while (--x) {
             PIECE* randPiece = b->pieces + (rand() % b->nPieces);
 
             if (!randPiece->present || randPiece->col != b->turn)
@@ -252,7 +252,7 @@ int main()
             free(b->pieces);
             free(b->moves);
             startGame(b);
-        }
+        }*/
 
         if (b->end) {
             int brk = 0;
@@ -269,11 +269,25 @@ int main()
                     break;
                 }
             case 3:
-                if (MessageBox(glfwGetWin32Window(window), L"Ein Spieler hat keine legalen Züge", L"Matt/Patt", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                if (MessageBox(glfwGetWin32Window(window), L"Patt:\nSchwarz hat keine legalen Züge", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
                     brk = 1;
                     break;
                 }
-
+            case 4:
+                if (MessageBox(glfwGetWin32Window(window), L"Patt:\nWeiß hat keine legalen Züge", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                    brk = 1;
+                    break;
+                }
+            case 5:
+                if (MessageBox(glfwGetWin32Window(window), L"Weiß hat gewonnen", L"Schachmatt", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                    brk = 1;
+                    break;
+                }
+            case 6:
+                if (MessageBox(glfwGetWin32Window(window), L"Schwarz hat gewonnen", L"Schachmatt", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                    brk = 1;
+                    break;
+                }
             default:
                 break;
             }
@@ -518,7 +532,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                     possibleMoves = NULL;
                     nPossibleMoves = 0;
                     selected = 0;
-                    b->turn ^= 1;
                     break;
                 }
             }
