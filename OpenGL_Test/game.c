@@ -176,8 +176,8 @@ _BOARD* createStdBoard() {
 		board->game.pieceTypes[5].evolveInto = 0b11110;
 	}
 
-	//setStartingPos(&board->game, "RNBQKBNRPPPPPPPP8888pppppppprnbqkbnr");
-	setStartingPos(&board->game, "RQK57k888888");
+	setStartingPos(&board->game, "RNBQKBNRPPPPPPPP8888pppppppprnbqkbnr");
+	//setStartingPos(&board->game, "RQK57k888888");
 
 	board->game.funnyMoves = funnyMovesStd;
 	board->game.doFunnyMove = doFunnyMoveStd;
@@ -191,7 +191,6 @@ _BOARD* createStdBoard() {
 
 void startGame(_BOARD* board) {
 
-	
 	board->nPieces = 0;
 	for (size_t i = 0; i < 64; i++)
 	{
@@ -200,6 +199,8 @@ void startGame(_BOARD* board) {
 			board->nPieces++;
 	}
 
+	board->checkLines = NULL;
+	board->nCheckLines = 0;
 	board->bl_pieceCount = 0;
 	board->wh_pieceCount = 0;
 	board->moves = NULL;
@@ -242,6 +243,8 @@ void startGame(_BOARD* board) {
 	}
 
 	savePos(board);
+
+	initCheckLines(board);
 }
 
 void setStartingPos(GAME* game, const char* pos) {// sets the starting position of a game
@@ -272,7 +275,8 @@ void setStartingPos(GAME* game, const char* pos) {// sets the starting position 
 	}
 }
 
-MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
+// TODO fix j++ bug where one (?, ?)->(7,6)-move (destination h7) is considered legal (most likely here?)
+MOVE* funnyMovesStd(PIECE* piece, _BOARD* board, char checkCheck) {
 	MOVE* lastMove = &board->moves[board->nMoves-1];
 
 	if ((board->nMoves > 0 && piece->ptemplate->abbreviation == 'P') // piece is a PAWN
@@ -296,7 +300,6 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
 	}
 
 	//castle
-
 	if ((piece->ptemplate->abbreviation == 'K') //piece is a King 
 		&& (piece->moved == 0)) {
 
@@ -308,89 +311,33 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
 		int j = 0;
 		if (!(board->squares[piece->col * 56 + 1]) && !(board->squares[piece->col * 56 + 2]) && !(board->squares[piece->col * 56 + 3]) && (!board->pieces[piece->col * 24].moved) && (board->pieces[piece->col * 24].present)) { //big castles
 
-			_BOARD* duplicate = (_BOARD*)malloc(sizeof(_BOARD));
-			if (!duplicate) {
-				moves[0].valid = 0; // continuing without checkCheck
-				return moves;
-			}
+			moves[j] = (MOVE){ 0 };
+			moves[j].y0 = piece->col * 7;
+			moves[j].y1 = piece->col * 7;
+			moves[j].x0 = 4;
+			moves[j].x1 = 2;
+			moves[j].valid = 1;
+			moves[j].funny = 1;
 
-			*duplicate = *board;
-
-			duplicate->pieces = (PIECE*)malloc(board->nPieces * sizeof(PIECE));
-			if (!duplicate->pieces) {
-				free(duplicate->moves);
-				free(duplicate);
-				moves[0].valid = 0; // continuing without checkCheck
-				return moves;
-			}
-
-			duplicate->nMoves = 0;
-
-			for (size_t i = 0; i < board->nPieces; i++)
-				duplicate->pieces[i] = board->pieces[i];
-
-
-			moves[0] = (MOVE){ 0 };
-			moves[0].y0 = piece->col * 7;
-			moves[0].y1 = piece->col * 7;
-			moves[0].x0 = 4;
-			moves[0].x1 = 2;
-			moves[0].valid = 1;
-
-			_move(duplicate, moves, 0);
-
-			// checkCheck is happening here
-
-
-			PIECE* p = duplicate->pieces;
-			// looping through all pieces
-			for (size_t i = 0; i < duplicate->nPieces; i++)
-			{
-				if ((p->col == piece->col) || !p->present) { // own or not present pieces can't capture the King
-					p++;
-					continue;
-				}
-
-				// getting possible moves for this piece
-				MOVE* theoreticalMoves = getPossibleMoves(p, duplicate, 0);
-
-				for (MOVE* move = theoreticalMoves; move->valid; move++)
+			if (checkCheck) {
+				for (size_t i = 0; i < board->nCheckLines; i++)
 				{
-					if (move->y1 == (piece->col * 7) && (move->x1 == 2 || move->x1 == 3 || move->x1 == 4)) {
-						return NULL;
-						break;
-					}
-				}
+					CHECKLINE* cl = board->checkLines + i;
 
-				p++;
+					if (cl->check && cl->move.y1 == piece->col * 7 && (cl->move.x0 == 4 || cl->move.x0 == 3 || cl->move.x0 == 2)) {
+						moves[j].valid = 0;
+					}
+
+				}
 			}
 
-			moves[j++].funny = 1;
+			if (moves[j].valid) {
+				j++;
+			}
 
 		}
 		if (!(board->squares[piece->col * 56 + 5]) && !(board->squares[piece->col * 56 + 6]) && (!board->pieces[piece->col * 24 + 7].moved) && (board->pieces[piece->col * 24 + 7].present)) { //small castles
-
-			_BOARD* duplicate = (_BOARD*)malloc(sizeof(_BOARD));
-			if (!duplicate) {
-				moves[j].valid = 0; // continuing without checkCheck
-				return moves;
-			}
-
-			*duplicate = *board;
-
-			duplicate->pieces = (PIECE*)malloc(board->nPieces * sizeof(PIECE));
-			if (!duplicate->pieces) {
-				free(duplicate->moves);
-				free(duplicate);
-				moves[j].valid = 0; // continuing without checkCheck
-				return moves;
-			}
-
-			duplicate->nMoves = 0;
-
-			for (size_t i = 0; i < board->nPieces; i++)
-				duplicate->pieces[i] = board->pieces[i];
-
+			//TODO checkCheck
 
 			moves[j] = (MOVE){ 0 };
 			moves[j].y0 = piece->col * 7;
@@ -398,39 +345,23 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board) {
 			moves[j].x0 = 4;
 			moves[j].x1 = 6;
 			moves[j].valid = 1;
+			moves[j].funny = 1;
 
-			_move(duplicate, moves + j, 0);
+			if (checkCheck) {
 
-			// checkCheck is happening here
-
-
-			PIECE* p = duplicate->pieces;
-			// looping through all pieces
-			for (size_t i = 0; i < duplicate->nPieces; i++)
-			{
-				if ((p->col == piece->col) || !p->present) { // own or not present pieces can't capture the King
-					p++;
-					continue;
-				}
-
-				// getting possible moves for this piece
-				MOVE* theoreticalMoves = getPossibleMoves(p, duplicate, 0);
-
-				for (MOVE* move = theoreticalMoves; move->valid; move++)
+				for (size_t i = 0; i < board->nCheckLines; i++)
 				{
-					if (move->y1 == (piece->col * 7) && (move->x1 == 5 || move->x1 == 6)) {
-						return NULL;
-						break;
+					CHECKLINE* cl = board->checkLines + i;
+
+					if (cl->check && cl->move.y1 == piece->col * 7 && (cl->move.x0 == 4 || cl->move.x0 == 5 || cl->move.x0 == 6)) {
+						moves[j].valid = 0;
 					}
+
 				}
-
-				p++;
 			}
-
-			free(duplicate->pieces);
-			free(duplicate);
-
-			moves[j++].funny = 1;
+			if (moves[j].valid) {
+				j++;
+			}
 		}
 		
 		moves[j].valid = 0;
@@ -483,23 +414,28 @@ void doFunnyMoveStd(PIECE* piece, struct _BOARD* board, MOVE* move) {
 }
 
 #define gotoxy(x,y) printf("\033[%d;%dH", (int)(y), (int)(x))
-void print_board(_BOARD* board, int y) {
-	gotoxy(0, y);
-	for (int i = 63; i >= 0; i--)
+void print_board(_BOARD* board, int _y) {
+	if (_y >= 0) {
+		gotoxy(0, _y);
+	}
+	for (size_t y = 7; y < -1; y--)
 	{
-
-		if (board->squares[i]) {
-			if (board->pieces[board->squares[i] & 0b1111111].col)
-				printf("b");
-			else
-				printf("w");
-			printf("%c", board->pieces[board->squares[i] & 0b1111111].ptemplate->abbreviation);
+		for (size_t x = 0; x < 8; x++)
+		{
+			int i = y * 8 + x;
+			if (board->squares[i]) {
+				if (board->pieces[board->squares[i] & 0b1111111].col)
+					printf("b");
+				else
+					printf("w");
+				printf("%c", board->pieces[board->squares[i] & 0b1111111].ptemplate->abbreviation);
+			}
+			else {
+				printf("  ");
+			}
+			if (i % 8 == 7)
+				printf("\n");
 		}
-		else {
-			printf("  ");
-		}
-		if (i % 8 == 0)
-			printf("\n");
 	}
 }
 
@@ -549,44 +485,61 @@ int isDrawStd(_BOARD* board) {
 
 		if (c)
 			rocc++;
- 
+
 	}
 	if (rocc > 1){
 		return 2;
 	}
 
-	// mate
+	// mate TODO
 	int nMoves = 0;
 	MOVE* moves = NULL;
-	for (size_t i = 0; i < board->nPieces; i++)
-	{
-		if (board->pieces[i].present && (board->pieces[i].col == board->turn)) {
-			moves = getPossibleMoves(board->pieces + i, board, 1);
-			if (moves && moves[0].valid) {
-				nMoves++;
+	MOVE_CONTAINER mc = getAllMoves(board);
+	moves = mc.moves;
+	if (mc.nMoves == 0) {
+
+		for (size_t i = 0; i < board->nCheckLines; i++)
+		{
+			int index = board->checkLines[i].move.y1 * 8 + board->checkLines[i].move.x1;
+
+			if (board->squares[index] && (board->pieces[board->squares[index] & 0b1111111].ptemplate->king)) {
+				return board->turn ? 5 : 6; // checkmate
 			}
-			if (moves)
-				free(moves);
 		}
+
+		return board->turn ? 3 : 4; // stalemate
 	}
 
-	if (!nMoves) {
-		for (size_t i = 0; i < board->nPieces; i++)
-		{
-			if (board->pieces[i].present && (board->pieces[i].col != board->turn)) {
-				moves = getPossibleMoves(board->pieces + i, board, 1);
-				for (int j = 0; moves && moves[j].valid; j++) {
-					if (board->squares[8 * moves[j].y1 + moves[j].x1] && board->pieces[board->squares[8 * moves[j].y1 + moves[j].x1] & 0b1111111].ptemplate->king) {
-						free(moves);
-						return board->turn ? 5 : 6;
-					}
-				}
-			}
-		}
-		if (moves)
-			free(moves);
-		return board->turn ? 3 : 4;
-	}
+
+	//for (size_t i = 0; i < board->nPieces; i++)
+	//{
+	//	if (board->pieces[i].present && (board->pieces[i].col == board->turn)) {
+	//		moves = getPossibleMoves(board->pieces + i, board, 1);
+	//		if (moves && moves[0].valid) {
+	//			nMoves++;
+	//		}
+	//		/*if (moves)
+	//			free(moves);*/
+	//	}
+	//}
+
+	//if (!nMoves) {
+	//	for (size_t i = 0; i < board->nPieces; i++)
+	//	{
+	//		if (board->pieces[i].present && (board->pieces[i].col != board->turn)) {
+	//			moves = getPossibleMoves(board->pieces + i, board, 1);
+	//			for (int j = 0; moves && moves[j].valid; j++) {
+	//				if (board->squares[8 * moves[j].y1 + moves[j].x1] && board->pieces[board->squares[8 * moves[j].y1 + moves[j].x1] & 0b1111111].ptemplate->king) {
+	//					free(moves);
+	//					return board->turn ? 5 : 6;
+	//				}
+	//			}
+	//		}
+	//	}
+	//	if (moves)
+	//		free(moves);
+	//	return board->turn ? 3 : 4;
+	//}
 
 	return 0; //gamestate is not a draw
 }
@@ -610,7 +563,7 @@ void savePos(_BOARD* board) {
 
 	for (size_t i = 0; i < 64; i++)
 	{
-		board->positions[64 * board->nPositions + i] = board->squares[i] ? (1 << 7 | ((1 << 6) * board->pieces[board->squares[i] & 0b1111111].col) | (unsigned char)(board->pieces[board->squares[i] & 0b1111111].ptemplate - board->game.pieceTypes)) : 0;
+		board->positions[((unsigned long)64 * board->nPositions) + i] = board->squares[i] ? (1 << 7 | ((1 << 6) * board->pieces[board->squares[i] & 0b1111111].col) | (unsigned char)(board->pieces[board->squares[i] & 0b1111111].ptemplate - board->game.pieceTypes)) : 0;
 	}
 
 	board->nPositions++;
@@ -621,6 +574,82 @@ void freeBoard(_BOARD* board) {
 		if (board->moves) free(board->moves);
 		if (board->pieces) free(board->pieces);
 		if (board->positions) free(board->positions);
+		if (board->checkLines) free(board->checkLines);
 		free(board);
 	}
+}
+
+void addCheckLine(_BOARD* board, CHECKLINE cl) {
+	if (!board->nCheckLines) {
+		if (board->checkLines)
+			free(board->checkLines);
+
+		board->checkLines = (CHECKLINE*)malloc(sizeof(CHECKLINE) * 10);
+		if (!board->checkLines) {
+			printf("There is some problem with the heap, please restart.\nIf this problem occurs repeatedly, restart your machine.");
+			system("pause");
+			return;
+		}
+	}
+	else {
+		if (board->nCheckLines % 10 == 0) {
+			void* realloced = realloc(board->checkLines, (board->nCheckLines + 10) * sizeof(CHECKLINE));
+			if (!realloced) {
+				printf("There is some problem with the heap, please restart.\nIf this problem occurs repeatedly, restart your machine.");
+				system("pause");
+				return;
+			}
+			board->checkLines = realloced;
+		}
+	}
+
+	board->checkLines[board->nCheckLines++] = cl;
+
+}
+
+void removeCheckLine(_BOARD* board, int index) {
+
+	for (size_t i = index; i < board->nCheckLines - 1; i++)
+	{
+		board->checkLines[i] = board->checkLines[i + 1];
+	}
+	board->nCheckLines--;
+}
+
+void initCheckLines(_BOARD* board) {
+	PIECE* king = board->pieces;
+
+	// searching first king
+	while (!king->ptemplate->king)
+		king++;
+
+	// creating checkLines that point directly to the king
+	createCheckLineTarget(board, king->x, king->y, king->col);
+
+	// creating checkLines that point to squares neighbouring the king
+	MOVE_CONTAINER moves = getPossibleMoves(king, board, 0, 1);
+	for (size_t i = 0; i < moves.nMoves; i++)
+	{
+		createCheckLineTarget(board, moves.moves[i].x1, moves.moves[i].y1, king->col);
+	}
+
+	free(moves.moves);
+
+
+	// searching the second king
+	king++;
+	while (!king->ptemplate->king)
+		king++;
+
+	// rinse and repeat
+
+	createCheckLineTarget(board, king->x, king->y, king->col);
+
+	moves = getPossibleMoves(king, board, 0, 1);
+	for (size_t i = 0; i < moves.nMoves; i++)
+	{
+		createCheckLineTarget(board, moves.moves[i].x1, moves.moves[i].y1, king->col);
+	}
+
+	free(moves.moves);
 }

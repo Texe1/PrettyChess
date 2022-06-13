@@ -36,6 +36,11 @@ typedef struct MOVE {
 		valid	: 1;
 } MOVE;
 
+typedef struct MoveContainer {
+	MOVE* moves;
+	unsigned long long nMoves;
+} MOVE_CONTAINER;
+
 typedef struct PIECE_TEMPLATE {
 	unsigned char nMoves;
 	MOVE_TEMPLATE* moves;
@@ -61,10 +66,22 @@ typedef struct PIECE {
 		present : 1;
 } PIECE;
 
-MOVE* getPossibleMoves(PIECE* p, void* pBoard, char checkCheck);
+MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char raw);
 
 inline int getMaxMoveCount(MOVE_TEMPLATE*);
 
 int _move(void*, MOVE*, char save);
 
 void evolve(void* board, int type);
+
+int isInCheckLine(int x, int y, void* cl, char infRep);
+
+MOVE_CONTAINER getAllMoves(void* b);
+
+void createCheckLine(void* b, int pieceIndex, int _x, int _y);
+
+void createCheckLineTarget(void* b, int _x, int _y, int col);
+
+void clearCheckLines(void* b, int _x, int _y);
+
+void clearCheckLineTarget(void* b, int _x, int _y, int col);
