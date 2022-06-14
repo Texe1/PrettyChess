@@ -24,6 +24,9 @@
     <ClCompile Include="game.c">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="schroedinger.c">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="basicShader.vert">
@@ -64,6 +67,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="game.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="schroedinger.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

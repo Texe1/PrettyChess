@@ -22,6 +22,9 @@ typedef struct MOVE_TEMPLATE {
 		mustCap	: 1,
 		cantCap	: 1;
 
+	int preX;
+	int preY;
+
 
 } MOVE_TEMPLATE;
 

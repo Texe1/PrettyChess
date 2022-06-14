@@ -145,6 +145,7 @@
     <ClCompile Include="game.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="piece.c" />
+    <ClCompile Include="schroedinger.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="basicShader.frag" />
@@ -160,6 +161,7 @@
   <ItemGroup>
     <ClInclude Include="game.h" />
     <ClInclude Include="piece.h" />
+    <ClInclude Include="schroedinger.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="stb_image_write.h" />
     <ClInclude Include="stb_loader.h" />

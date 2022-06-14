@@ -12,6 +12,7 @@
 
 #include "piece.h"
 #include "game.h"
+#include "schroedinger.h"
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
@@ -44,11 +45,20 @@ int main()
 
     sprintf(title, "Chess %lld %d", t, gameCtr);
 
-    b = createStdBoard();
+    //b = createStdBoard();
+    b = createSchroedingerBoard();
+    b->game.pieceTypes[0].moves[0].preX = 1;
 
     system("pause");
 
     print_board(b, 0);
+
+    printf("CheckLines:\n");
+    for (size_t i = 0; i < b->nCheckLines; i++)
+    {
+        printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d\n", (char)('a' + b->checkLines[i].move.x0), (char)('1' + b->checkLines[i].move.y0), (char)('a' + b->checkLines[i].move.x1), (char)('1' + b->checkLines[i].move.y1), b->checkLines[i].check, b->checkLines[i].direct, b->checkLines[i].col);
+    }
+    printf("\n");
 
     GLFWwindow* window;
 
@@ -278,7 +288,7 @@ int main()
 
                 switch (b->end)
                 {
-                /*case 1:
+                case 1:
                     if (MessageBox(glfwGetWin32Window(window), L"Nicht genug Material", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
                         break;
                     }
@@ -301,7 +311,7 @@ int main()
                 case 6:
                     if (MessageBox(glfwGetWin32Window(window), L"Schwarz hat gewonnen", L"Schachmatt", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
                         break;
-                    }*/
+                    }
                 case 7:
                     if (MessageBox(glfwGetWin32Window(window), L"King not found", L"ERROR 404", MB_ICONERROR | MB_OK) == IDOK) {
                         break;
