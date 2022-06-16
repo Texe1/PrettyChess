@@ -44,6 +44,7 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 		char flipX = mt->flipX;
 		char flipY = mt->flipY;
 		char flipXY = flipX && flipY;
+		int preY = (!p->col) ? mt->preY : -mt->preY;
 
 		for (int k = 1; k <= mt->maxRep; k++)
 		{
@@ -53,19 +54,20 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 
 			unsigned char xPlus = ((((int)p->x + (int)dx + mt->preX) >= 0) && (((int)p->x + (int)dx + mt->preX) < 8));
 			unsigned char xMinus = ((((int)p->x - (int)dx + mt->preX) >= 0) && (((int)p->x - (int)dx + mt->preX) < 8));
-			unsigned char yPlus = ((((int)p->y + (int)dy + mt->preY) >= 0) && (((int)p->y + (int)dy + mt->preY) < 8));
-			unsigned char yMinus = ((((int)p->y - (int)dy + mt->preY) >= 0) && (((int)p->y - (int)dy + mt->preY) < 8));
+			unsigned char yPlus = ((((int)p->y + (int)dy + preY) >= 0) && (((int)p->y + (int)dy + preY) < 8));
+			unsigned char yMinus = ((((int)p->y - (int)dy + preY) >= 0) && (((int)p->y - (int)dy + preY) < 8));
 
-			if ((int)dx + mt->preX == 0 && (int)dy + mt->preY == 0) {
+			/*if ((dx + mt->preX == 0) && (dy + (!p->col ? mt->preY : -mt->preY) == 0)) {
 
 				dx += mt->xDir;
 				dy += !p->col ? mt->yDir : (-mt->yDir);
 				continue;
-			}
+			}*/
+
 			if (!flipX && !flipY && !flipXY && !std)
 				break;
 
-			if (std && xPlus && yPlus) {
+			if (std && xPlus && yPlus && !((dx + mt->preX == 0) && (dy + preY == 0))) {
 				m.x1 = p->x + dx + mt->preX;
 				m.y1 = p->y + dy + mt->preY;
 
@@ -86,7 +88,7 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 				}
 			}
 
-			if (flipX && xMinus && yPlus) { // flipped in X
+			if (flipX && xMinus && yPlus && !((dx - mt->preX == 0) && (dy + preY == 0))) { // flipped in X
 				m.x1 = p->x - dx + mt->preX;
 				m.y1 = p->y + dy + mt->preY;
 				
@@ -108,7 +110,7 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 				}
 			}
 
-			if (flipY && yMinus && xPlus) { // flipped in Y
+			if (flipY && yMinus && xPlus && !((dx + mt->preX == 0) && (dy - preY == 0))) { // flipped in Y
 				m.x1 = p->x + dx + mt->preX;
 				m.y1 = p->y - dy + mt->preY;
 
@@ -129,7 +131,7 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 				}
 			}
 
-			if (flipXY && xMinus && yMinus) { // flipped in X and Y
+			if (flipXY && xMinus && yMinus && !((dx - mt->preX == 0) && (dy - preY == 0))) { // flipped in X and Y
 				m.x1 = p->x - dx + mt->preX;
 				m.y1 = p->y - dy + mt->preY;
 
@@ -386,7 +388,9 @@ int _move(void* b, MOVE* m, char save) {
 					board->checkLines[i].check = 1;
 					for (size_t j = 0; j < board->nPieces; j++)
 					{
-						if (piece != board->pieces + j && isInCheckLine(board->pieces[j].x, board->pieces[j].y, board->checkLines + i, 0)) {
+						if (piece != board->pieces + j && isInCheckLine(board->pieces[j].x, board->pieces[j].y, board->checkLines + i, 0) && 
+							!(board->pieces[j].x == board->checkLines[i].move.x1 && board->pieces[j].y == board->checkLines[i].move.y1) &&
+							!(board->pieces[j].x == board->checkLines[i].move.x0 && board->pieces[j].y == board->checkLines[i].move.y0)) {
 							board->checkLines[i].check = 0;
 						}
 					}
