@@ -44,7 +44,7 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 		char flipX = mt->flipX;
 		char flipY = mt->flipY;
 		char flipXY = flipX && flipY;
-		int preY = (!p->col) ? mt->preY : -mt->preY;
+		int preY = (!p->col) ? mt->pre.dy : -mt->pre.dy;
 
 		for (int k = 1; k <= mt->maxRep; k++)
 		{
@@ -52,24 +52,17 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 			if (mt->init && p->moved)
 				continue;
 
-			unsigned char xPlus = ((((int)p->x + (int)dx + mt->preX) >= 0) && (((int)p->x + (int)dx + mt->preX) < 8));
-			unsigned char xMinus = ((((int)p->x - (int)dx + mt->preX) >= 0) && (((int)p->x - (int)dx + mt->preX) < 8));
+			unsigned char xPlus = ((((int)p->x + (int)dx + mt->pre.dx) >= 0) && (((int)p->x + (int)dx + mt->pre.dx) < 8));
+			unsigned char xMinus = ((((int)p->x - (int)dx + mt->pre.dx) >= 0) && (((int)p->x - (int)dx + mt->pre.dx) < 8));
 			unsigned char yPlus = ((((int)p->y + (int)dy + preY) >= 0) && (((int)p->y + (int)dy + preY) < 8));
 			unsigned char yMinus = ((((int)p->y - (int)dy + preY) >= 0) && (((int)p->y - (int)dy + preY) < 8));
-
-			/*if ((dx + mt->preX == 0) && (dy + (!p->col ? mt->preY : -mt->preY) == 0)) {
-
-				dx += mt->xDir;
-				dy += !p->col ? mt->yDir : (-mt->yDir);
-				continue;
-			}*/
 
 			if (!flipX && !flipY && !flipXY && !std)
 				break;
 
-			if (std && xPlus && yPlus && !((dx + mt->preX == 0) && (dy + preY == 0))) {
-				m.x1 = p->x + dx + mt->preX;
-				m.y1 = p->y + dy + mt->preY;
+			if (std && xPlus && yPlus && !((dx + mt->pre.dx == 0) && (dy + preY == 0))) {
+				m.x1 = p->x + dx + mt->pre.dx;
+				m.y1 = p->y + dy + mt->pre.dy;
 
  				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
 					if (!raw) {
@@ -88,9 +81,9 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 				}
 			}
 
-			if (flipX && xMinus && yPlus && !((dx - mt->preX == 0) && (dy + preY == 0))) { // flipped in X
-				m.x1 = p->x - dx + mt->preX;
-				m.y1 = p->y + dy + mt->preY;
+			if (flipX && xMinus && yPlus && !((dx - mt->pre.dx == 0) && (dy + preY == 0))) { // flipped in X
+				m.x1 = p->x - dx + mt->pre.dx;
+				m.y1 = p->y + dy + mt->pre.dy;
 				
 				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
 					if (!raw) {
@@ -110,9 +103,9 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 				}
 			}
 
-			if (flipY && yMinus && xPlus && !((dx + mt->preX == 0) && (dy - preY == 0))) { // flipped in Y
-				m.x1 = p->x + dx + mt->preX;
-				m.y1 = p->y - dy + mt->preY;
+			if (flipY && yMinus && xPlus && !((dx + mt->pre.dx == 0) && (dy - preY == 0))) { // flipped in Y
+				m.x1 = p->x + dx + mt->pre.dx;
+				m.y1 = p->y - dy + mt->pre.dy;
 
 				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
 					if (!raw) {
@@ -131,9 +124,9 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 				}
 			}
 
-			if (flipXY && xMinus && yMinus && !((dx - mt->preX == 0) && (dy - preY == 0))) { // flipped in X and Y
-				m.x1 = p->x - dx + mt->preX;
-				m.y1 = p->y - dy + mt->preY;
+			if (flipXY && xMinus && yMinus && !((dx - mt->pre.dx == 0) && (dy - preY == 0))) { // flipped in X and Y
+				m.x1 = p->x - dx + mt->pre.dx;
+				m.y1 = p->y - dy + mt->pre.dy;
 
 				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
 					if (!raw) {
@@ -258,8 +251,8 @@ MOVE_TEMPLATE* testMove(MOVE* move, PIECE_TEMPLATE templ, char col) {
 		if (m.cap && mTempl->cantCap)
 			continue;
 
-		int dx = (int)m.x1 - (int)m.x0 - mTempl->preX;
-		int dy = ((int)m.y1 - (int)m.y0 - mTempl->preY) * (col ? -1 : + 1);
+		int dx = (int)m.x1 - (int)m.x0 - mTempl->pre.dx;
+		int dy = ((int)m.y1 - (int)m.y0 - mTempl->pre.dy) * (col ? -1 : + 1);
 		if ((dy < 0 && !mTempl->flipY) || (dx < 0 && !mTempl->flipX)) {
 			continue;
 		}
@@ -549,8 +542,8 @@ int isInCheckLine(int x, int y, void* cl, char infRep)
 {
 	CHECKLINE* checkLine = (CHECKLINE*)cl;
 
-	int dx = x - checkLine->move.x0 - checkLine->mTemplate->preX;
-	int dy = y - checkLine->move.y0 - checkLine->mTemplate->preY;
+	int dx = x - checkLine->move.x0 - checkLine->mTemplate->pre.dx;
+	int dy = y - checkLine->move.y0 - checkLine->mTemplate->pre.dy;
 
 	int clDx = checkLine->flipX ? -checkLine->mTemplate->xDir : checkLine->mTemplate->xDir;
 	int clDy = checkLine->flipY ? -checkLine->mTemplate->yDir : checkLine->mTemplate->yDir;
@@ -608,14 +601,14 @@ void createCheckLine(void* b, int pieceIndex, int _x, int _y) {
 	cl.move = m;
 	cl.col = !piece->col;
 	cl.mTemplate = mt;
-	int dx = (int)m.x1 - (int)m.x0 - mt->preX;
-	int dy = (int)m.y1 - (int)m.y0 - mt->preY;
+	int dx = (int)m.x1 - (int)m.x0 - mt->pre.dx;
+	int dy = (int)m.y1 - (int)m.y0 - mt->pre.dy;
 	cl.reps = (dx && mt->xDir) ? (abs(dx) / abs(mt->xDir)) : (abs(dy) / abs(mt->yDir));
 	cl.flipX = ((m.x1 < m.x0 && mt->xDir > 0) || (m.x1 > m.x0 && mt->xDir < 0)) ? 1 : 0;
 	cl.flipY = ((m.y1 < m.y0 && mt->yDir > 0) || (m.y1 > m.y0 && mt->yDir < 0)) ? 1 : 0;
 	
 	// checking if there is a piece in between (king not included) (if there is, then check bit will be 0)
-	int x = piece->x + mt->preX, y = piece->y + mt->preY;
+	int x = piece->x + mt->pre.dx, y = piece->y + mt->pre.dy;
 	for (size_t i = 0; i < cl.reps - 1; i++)
 	{
 		x += cl.flipX ? -mt->xDir : mt->xDir;
@@ -665,13 +658,13 @@ void createCheckLineTarget(void* b, int _x, int _y, int col) {
 		cl.move = m;
 		cl.col = col;
 		cl.mTemplate = mt;
-		int dx = (int)m.x1 - (int)m.x0 - mt->preX;
-		int dy = (int)m.y1 - (int)m.y0 - mt->preY;
+		int dx = (int)m.x1 - (int)m.x0 - mt->pre.dx;
+		int dy = (int)m.y1 - (int)m.y0 - mt->pre.dy;
 		cl.reps = (dx && mt->xDir) ? (abs(dx) / abs(mt->xDir)) : (abs(dy) / abs(mt->yDir));
 		cl.flipX = ((m.x1 < m.x0&& mt->xDir > 0) || (m.x1 > m.x0 && mt->xDir < 0)) ? 1 : 0;
 		cl.flipY = ((m.y1 < m.y0&& mt->yDir > 0) || (m.y1 > m.y0 && mt->yDir < 0)) ? 1 : 0;
 
-		int x = piece->x + mt->preX, y = piece->y + mt->preY;
+		int x = piece->x + mt->pre.dx, y = piece->y + mt->pre.dy;
 		for (size_t i = 0; i < cl.reps - 1; i++)
 		{
 			x += cl.flipX ? -mt->xDir : mt->xDir;

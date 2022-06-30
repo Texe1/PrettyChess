@@ -7,6 +7,11 @@
 #define IS_SELECTED(piece) (((piece) & 1 << 6) != 0)
 #define EN_PASSANT(piece) ((piece) & (1 << 5))
 
+typedef struct preMove {
+	char dx;
+	char dy;
+} PRE_MOVE;
+
 typedef struct MOVE_TEMPLATE {
 	char xDir;
 	char yDir;
@@ -22,8 +27,7 @@ typedef struct MOVE_TEMPLATE {
 		mustCap	: 1,
 		cantCap	: 1;
 
-	int preX;
-	int preY;
+	PRE_MOVE pre;
 
 
 } MOVE_TEMPLATE;

@@ -47,7 +47,7 @@ int main()
 
     //b = createStdBoard();
     b = createSchroedingerBoard();
-    b->game.pieceTypes[0].moves[0].preX = 1;
+    b->game.pieceTypes[0].moves[0].pre.dx = 1;
 
     system("pause");
 

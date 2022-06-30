@@ -21,7 +21,7 @@ _BOARD* createSchroedingerBoard() {
 		board->game.pieceTypes[0].nMoves = 6;
 
 		MOVE_TEMPLATE move = { 0 };
-		move.preX = 1;
+		move.pre.dx = 1;
 
 		move.flipX = 1;
 		move.xDir = 1;
@@ -41,7 +41,7 @@ _BOARD* createSchroedingerBoard() {
 		board->game.pieceTypes[0].moves[2] = move;
 
 		move = (MOVE_TEMPLATE){ 0 };
-		move.preX = -1;
+		move.pre.dx = -1;
 
 		move.flipX = 1;
 		move.xDir = 1;
@@ -72,7 +72,7 @@ _BOARD* createSchroedingerBoard() {
 		board->game.pieceTypes[1].nMoves = 6;
 
 		MOVE_TEMPLATE move = { 0 };
-		move.preX = 1;
+		move.pre.dx = 1;
 
 		move.flipX = 1;
 		move.xDir = 1;
@@ -92,7 +92,7 @@ _BOARD* createSchroedingerBoard() {
 		board->game.pieceTypes[1].moves[2] = move;
 
 		move = (MOVE_TEMPLATE){ 0 };
-		move.preX = -1;
+		move.pre.dx = -1;
 		move.flipX = 1;
 		move.xDir = 1;
 		move.minRep = 1;
@@ -122,7 +122,7 @@ _BOARD* createSchroedingerBoard() {
 		board->game.pieceTypes[2].nMoves = 4;
 
 		MOVE_TEMPLATE move = { 0 };
-		move.preX = 1;
+		move.pre.dx = 1;
 
 		move.flipX = 1;
 		move.xDir = 1;
@@ -137,7 +137,7 @@ _BOARD* createSchroedingerBoard() {
 		board->game.pieceTypes[2].moves[1] = move;
 
 		move = (MOVE_TEMPLATE){0};
-		move.preX = -1;
+		move.pre.dx = -1;
 
 		move.flipX = 1;
 		move.xDir = 1;
@@ -163,7 +163,7 @@ _BOARD* createSchroedingerBoard() {
 		board->game.pieceTypes[3].nMoves = 4;
 
 		MOVE_TEMPLATE move = { 0 };
-		move.preX = 1;
+		move.pre.dx = 1;
 
 		move.flipX = 1;
 		move.flipY = 1;
@@ -177,7 +177,7 @@ _BOARD* createSchroedingerBoard() {
 		board->game.pieceTypes[3].moves[1] = move;
 
 		move = (MOVE_TEMPLATE){0};
-		move.preX = -1;
+		move.pre.dx = -1;
 
 		move.flipX = 1;
 		move.flipY = 1;
@@ -202,7 +202,7 @@ _BOARD* createSchroedingerBoard() {
 		board->game.pieceTypes[4].nMoves = 2;
 
 		MOVE_TEMPLATE move = { 0 };
-		move.preX = 1;
+		move.pre.dx = 1;
 
 		move.flipX = 1;
 		move.flipY = 1;
@@ -214,7 +214,7 @@ _BOARD* createSchroedingerBoard() {
 
 
 		move = (MOVE_TEMPLATE){0};
-		move.preX = -1;
+		move.pre.dx = -1;
 		move.flipX = 1;
 		move.flipY = 1;
 		move.xDir = 1;
@@ -235,7 +235,7 @@ _BOARD* createSchroedingerBoard() {
 		board->game.pieceTypes[5].nMoves = 6;
 
 		MOVE_TEMPLATE move = { 0 };
-		move.preX = 1;
+		move.pre.dx = 1;
 
 		move.flipX = 1;
 		move.xDir = 1;
@@ -262,7 +262,7 @@ _BOARD* createSchroedingerBoard() {
 
 
 		move = (MOVE_TEMPLATE){0};
-		move.preX = -1;
+		move.pre.dx = -1;
 
 		move.flipX = 1;
 		move.xDir = 1;
