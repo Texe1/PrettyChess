@@ -45,9 +45,8 @@ int main()
 
     sprintf(title, "Chess %lld %d", t, gameCtr);
 
-    //b = createStdBoard();
-    b = createSchroedingerBoard();
-    b->game.pieceTypes[0].moves[0].pre.dx = 1;
+    b = createStdBoard();
+    //b = createSchroedingerBoard();
 
     system("pause");
 
@@ -239,7 +238,7 @@ int main()
         unsigned int x = 230000;
 
         //Sleep(500);
-        /*while (--x && !b->end) {
+        while (--x && !b->end) {
             PIECE* randPiece = b->pieces + (rand() % b->nPieces);
 
             if (!randPiece->present || randPiece->col != b->turn)
@@ -264,7 +263,7 @@ int main()
             printf("CheckLines:\n");
             for (size_t i = 0; i < b->nCheckLines; i++)
             {
-                printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d\n", (char)('a' + b->checkLines[i].move.x0), (char)('1' + b->checkLines[i].move.y0), (char)('a' + b->checkLines[i].move.x1), (char)('1' + b->checkLines[i].move.y1), b->checkLines[i].check, b->checkLines[i].direct, b->checkLines[i].col);
+                printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d, reps: %d\n", (char)('a' + b->checkLines[i].move.x0), (char)('1' + b->checkLines[i].move.y0), (char)('a' + b->checkLines[i].move.x1), (char)('1' + b->checkLines[i].move.y1), b->checkLines[i].check, b->checkLines[i].direct, b->checkLines[i].col, b->checkLines[i].reps);
             }
             printf("\n");
 
@@ -278,7 +277,7 @@ int main()
                     b->end = 7;
                 }
             }
-        }*/
+        }
 
         if (b->end) {
             if (++timer > 10) {
@@ -288,7 +287,7 @@ int main()
 
                 switch (b->end)
                 {
-                case 1:
+                /*case 1:
                     if (MessageBox(glfwGetWin32Window(window), L"Nicht genug Material", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
                         break;
                     }
@@ -311,7 +310,7 @@ int main()
                 case 6:
                     if (MessageBox(glfwGetWin32Window(window), L"Schwarz hat gewonnen", L"Schachmatt", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
                         break;
-                    }
+                    }*/
                 case 7:
                     if (MessageBox(glfwGetWin32Window(window), L"King not found", L"ERROR 404", MB_ICONERROR | MB_OK) == IDOK) {
                         break;
@@ -463,14 +462,16 @@ int fillBufferFromBoard(_BOARD* b, unsigned int vbo) {
             nPieces++;
     }
 
+
     int actualMoves = 0;
-    for (size_t i = 0; i < nPossibleMoves; i++)
-    {
-        if ((possibleMoves[i].x0 == selectedX) && (possibleMoves[i].y0 == selectedY)) {
-            actualMoves++;
+    if (possibleMoves) {
+        for (size_t i = 0; i < nPossibleMoves; i++)
+        {
+            if ((possibleMoves[i].x0 == selectedX) && (possibleMoves[i].y0 == selectedY)) {
+                actualMoves++;
+            }
         }
     }
-
     int* result = (int*)malloc((nPieces + actualMoves) * 3 * sizeof(int));
     if (!result)
         return 0;
@@ -492,9 +493,9 @@ int fillBufferFromBoard(_BOARD* b, unsigned int vbo) {
     for (size_t i = 0; i < b->nPieces; i++)
     {
         if (b->pieces[i].present) {
-            result[j * 3] = (int) b->pieces[i].x;
-            result[j * 3 + 1] = (int) b->pieces[i].y;
-            result[j * 3 + 2] = (int) (b->pieces[i].ptemplate - b->game.pieceTypes);
+            result[j * 3] = (int)b->pieces[i].x;
+            result[j * 3 + 1] = (int)b->pieces[i].y;
+            result[j * 3 + 2] = (int)(b->pieces[i].ptemplate - b->game.pieceTypes);
             if (b->pieces[i].col)
                 result[3 * j + 2] += 6;
             j++;

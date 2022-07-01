@@ -45,7 +45,8 @@ typedef struct CheckLine {
 		flipY	: 1,
 		reps	: 3,
 		col		: 1, // 1 for black King
-		check	: 1; // if the line is free
+		check	: 1, // if the line is free
+		nBtw	: 3; // how many pieces block the Line
 
 } CHECKLINE;
 

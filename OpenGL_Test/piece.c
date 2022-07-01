@@ -162,6 +162,7 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 	if (checkCheck) {
 		MOVE* move = moves;
 		for (size_t k = 0; k < j; k++) {
+			move = moves + k;
 			for (i = 0; i < board->nCheckLines; i++)
 			{
 
@@ -173,38 +174,39 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 
 				// the king wants to move
 				if (p->ptemplate->king) {
-					if (cl->check && isInCheckLine(move->x1, move->y1, cl, 0)) {
+					if (cl->check && (move->x1 == cl->move.x1 && move->y1 == cl->move.y1)) {
 						move->valid = 0;
 						break;
 					}
 				}
-				else {
-					if (cl->direct && cl->check && cl->col == p->col && !isInCheckLine(move->x1, move->y1, cl, 0) && !(move->x1 == cl->move.x0 && move->y1 == cl->move.y0)) {
-						move->valid = 0;
-						break;
-					}
-					if (!cl->check && cl->direct && isInCheckLine(move->x0, move->y0, cl, 0) && !isInCheckLine(move->x1, move->y1, cl, 0) && !(move->x1 == cl->move.x0 && move->y1 == cl->move.y0)) {
-						move->valid = 0;
-						for (size_t i = 0; i < board->nPieces; i++)
-						{
-							PIECE* piece = board->pieces + i;
-							if (!board->pieces[i].present || (piece->x == p->x && piece->y == p->y))
-								continue;
+				if (cl->direct && cl->check && !isInCheckLine(move->x1, move->y1, cl) && !(move->x1 == cl->move.x0 && move->y1 == cl->move.y0)) {
+					move->valid = 0;
+					break;
+				}
 
-							if (!piece->ptemplate->king && isInCheckLine(piece->x, piece->y, cl, 0)) {
-								move->valid = 1;
-								isInCheckLine(piece->x, piece->y, cl, 0);
-								break;
-							}
-						}
-						if (!move->valid)
+				if (!cl->check && cl->direct && isInCheckLine(move->x0, move->y0, cl) && !isInCheckLine(move->x1, move->y1, cl) && !(move->x1 == cl->move.x0 && move->y1 == cl->move.y0)) {
+					move->valid = 0;
+					for (size_t i = 0; i < board->nPieces; i++)
+					{
+						PIECE* piece = board->pieces + i;
+						if (piece == p)
+							continue;
+
+						if (!board->pieces[i].present || (piece->x == p->x && piece->y == p->y))
+							continue;
+
+						if (!piece->ptemplate->king && isInCheckLine(piece->x, piece->y, cl)) {
+							move->valid = 1;
+							isInCheckLine(piece->x, piece->y, cl);
 							break;
+						}
 					}
+					if (!move->valid)
+						break;
 				}
 
 				move->valid = 1;
 			}
-			move++;
 		}
 
 		// shifting moves so that there are no invalid moves
@@ -241,41 +243,59 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 
 }
 
-MOVE_TEMPLATE* testMove(MOVE* move, PIECE_TEMPLATE templ, char col) {
-	MOVE m = *move;
-
-	for (size_t i = 0; i < templ.nMoves; i++)
+MOVE_TEMPLATE* testMove(MOVE* move, PIECE_TEMPLATE* templ, char col) {
+	for (size_t i = 0; i < templ->nMoves; i++)
 	{
-		MOVE_TEMPLATE* mTempl = templ.moves + i;
-
-		if (m.cap && mTempl->cantCap)
-			continue;
-
-		int dx = (int)m.x1 - (int)m.x0 - mTempl->pre.dx;
-		int dy = ((int)m.y1 - (int)m.y0 - mTempl->pre.dy) * (col ? -1 : + 1);
-		if ((dy < 0 && !mTempl->flipY) || (dx < 0 && !mTempl->flipX)) {
-			continue;
-		}
-
-		dx = abs(dx);
-		dy = abs(dy);
-
-		int clDx = abs(mTempl->xDir);
-		int clDy = abs(mTempl->yDir);
-
-		if (((clDx && dx % clDx) || (!clDx && dx)) || ((clDy && dy % clDy) || (!clDy && dy)))
-			continue;
-
-		int nReps = clDx ? (dx / clDx) : (dy / clDy);
-		if ((clDx && clDy && (dy / clDy != nReps)) || (nReps > mTempl->maxRep) || (nReps < mTempl->minRep))
-			continue;
-
-		move->valid = 1;
-		return mTempl;
+		MOVE_TEMPLATE* mTempl = templ->moves + i;
+		if (testMoveOnTempl(move, mTempl, col))
+			return mTempl;
 	}
 
 	move->valid = 0;
 	return NULL;
+}
+
+int testMoveOnTempl(MOVE* move, MOVE_TEMPLATE* templ, char col) {
+	if (move->cap && templ->cantCap)
+		return 0;
+
+	int dx = (int)move->x1 - (int)move->x0 - (int)templ->pre.dx;
+	int dy = (int)move->y1 - (int)move->y0 - (int)templ->pre.dy;
+
+	if (col) dy *= -1;
+
+	if (dx == 0 && dy == 0)
+		return 0;
+
+	if (move->x1 >= 6) {
+		int xdfjk = 0;
+	}
+
+	if (((dx == 0) != (templ->xDir == 0)) || ((dy == 0) != (templ->yDir == 0))
+		|| (!templ->flipX && ((dx > 0) != (templ->xDir > 0))) 
+		|| (!templ->flipY && ((dy > 0) != (templ->yDir > 0)))
+		)
+		return 0;
+
+	dx = abs(dx);
+	dy = abs(dy);
+
+
+	int xDir = abs(templ->xDir);
+	int yDir = abs(templ->yDir);
+
+	if (((dx != 0) && (dx % xDir)) || ((dy != 0) && (dy % yDir)))
+		return 0;
+
+	int reps = (dx != 0) ? (dx / xDir) : (dy / yDir);
+	if ((reps > templ->maxRep) || (reps < templ->minRep))
+		return 0;
+
+	if (dx != 0 && dy != 0 && ((dy / yDir) != reps))
+		return 0;
+
+	return 1;
+
 }
 
 inline int getMaxMoveCount(MOVE_TEMPLATE* templ) {
@@ -372,18 +392,27 @@ int _move(void* b, MOVE* m, char save) {
 			for (size_t i = 0; i < board->nCheckLines; i++)
 			{
 				// moving into existing checkLine (setting check bit to 0)
-				if (isInCheckLine(m->x1, m->y1, board->checkLines + i, 0) && !((m->x1 == board->checkLines[i].move.x1) && (m->y1 == board->checkLines[i].move.y1))) {
+				if (isInCheckLine(m->x1, m->y1, board->checkLines + i) 
+					&& !((m->x1 == board->checkLines[i].move.x1) && (m->y1 == board->checkLines[i].move.y1))
+					) {
 					board->checkLines[i].check = 0;
 				}
 
 				// moving out of checkLine (setting check bit to 1)
-				if (isInCheckLine(m->x0, m->y0, board->checkLines + i, 0) && (!isInCheckLine(m->x1, m->y1, board->checkLines + i, 0) || (m->x1 == board->checkLines[i].move.x1) && (m->y1 == board->checkLines[i].move.y1))) {
+				if (!(m->x0 == board->checkLines[i].move.x1 && m->y0 == board->checkLines[i].move.y1) 
+					&& (isInCheckLine(m->x0, m->y0, board->checkLines + i) 
+						&& (!isInCheckLine(m->x1, m->y1, board->checkLines + i) 
+							|| ((m->x1 == board->checkLines[i].move.x1) 
+							&& (m->y1 == board->checkLines[i].move.y1))
+							)
+						)
+					) {
 					board->checkLines[i].check = 1;
 					for (size_t j = 0; j < board->nPieces; j++)
 					{
-						if (piece != board->pieces + j && isInCheckLine(board->pieces[j].x, board->pieces[j].y, board->checkLines + i, 0) && 
-							!(board->pieces[j].x == board->checkLines[i].move.x1 && board->pieces[j].y == board->checkLines[i].move.y1) &&
-							!(board->pieces[j].x == board->checkLines[i].move.x0 && board->pieces[j].y == board->checkLines[i].move.y0)) {
+						PIECE* other = board->pieces + j;
+						if ((other != piece) && isInCheckLine(other->x, other->y, board->checkLines + i) &&
+							!(other->x == board->checkLines[i].move.x1 && other->y == board->checkLines[i].move.y1)) {
 							board->checkLines[i].check = 0;
 						}
 					}
@@ -538,35 +567,31 @@ MOVE_CONTAINER getAllMoves(void* b) {
 
 }
 
-int isInCheckLine(int x, int y, void* cl, char infRep)
+int isInCheckLine(int x, int y, void* c)
 {
-	CHECKLINE* checkLine = (CHECKLINE*)cl;
+	CHECKLINE* cl = (CHECKLINE*)c;
 
-	int dx = x - checkLine->move.x0 - checkLine->mTemplate->pre.dx;
-	int dy = y - checkLine->move.y0 - checkLine->mTemplate->pre.dy;
+	int dx = x - cl->move.x0 - cl->mTemplate->pre.dx;
+	int dy = y - cl->move.y0 - cl->mTemplate->pre.dy;
 
-	int clDx = checkLine->flipX ? -checkLine->mTemplate->xDir : checkLine->mTemplate->xDir;
-	int clDy = checkLine->flipY ? -checkLine->mTemplate->yDir : checkLine->mTemplate->yDir;
+	if (cl->flipX)
+		dx *= -1;
+	if (cl->flipY)
+		dy *= -1;
 
+	int clDx = cl->mTemplate->xDir;
+	int clDy = cl->mTemplate->yDir;
 
-	if (((dx > 0 && clDx <= 0) || (dx < 0 && clDx >= 0) || (dx == 0 && clDx != 0))
-		|| ((dy > 0 && clDy <= 0) || (dy < 0 && clDy >= 0) || (dy == 0 && clDy != 0))) {
-		return 0;
-	}
-
-	dx = abs(dx);
-	dy = abs(dy);
-
-	if ((checkLine->mTemplate->xDir && (dx % abs(checkLine->mTemplate->xDir))) || (checkLine->mTemplate->yDir && (dy % abs(checkLine->mTemplate->yDir)))) {// false
-		return 0;
-	}
-
-	if (((checkLine->mTemplate->xDir ? (dx / abs(checkLine->mTemplate->xDir)) : (dy / abs(checkLine->mTemplate->yDir))) > checkLine->reps) && !infRep)
+	if (((clDx == 0) != (dx == 0)) || ((clDy == 0) != (dy == 0)))
 		return 0;
 
-	if (checkLine->mTemplate->xDir && checkLine->mTemplate->yDir && ((dx / abs(checkLine->mTemplate->xDir)) != (dy / abs(checkLine->mTemplate->yDir)))) {
+	if ((clDx && (dx % clDx)) || (clDy && (dy % clDy)))
 		return 0;
-	}
+
+	int reps = clDx ? (dx / clDx) : (dy / clDy);
+
+	if (reps > cl->reps || reps < cl->mTemplate->minRep || (clDy != 0 && (reps != dy / clDy)))
+		return 0;
 
 	return 1;
 
@@ -585,42 +610,72 @@ void createCheckLine(void* b, int pieceIndex, int _x, int _y) {
 	m.x1 = _x;
 	m.y1 = _y;
 
-	// testing if valid move and storing Template in mt
-	MOVE_TEMPLATE* mt = testMove(&m, *piece->ptemplate, piece->col);
-
-	if (!mt) // no appropriate MOVE_TEMPLATE found
-		return;
-
-	if (mt->cantCap || (mt->init && piece->moved)) // this move can not be used (anymore) to capture the king
-		return;
-
-	// creating CHECKLINE struct to add
-	CHECKLINE cl = { 0 };
-	cl.check = 1;
-	cl.direct = (board->squares[_y * 8 + _x] && board->pieces[board->squares[_y * 8 + _x] & 0b1111111].ptemplate->king) ? 1 : 0;
-	cl.move = m;
-	cl.col = !piece->col;
-	cl.mTemplate = mt;
-	int dx = (int)m.x1 - (int)m.x0 - mt->pre.dx;
-	int dy = (int)m.y1 - (int)m.y0 - mt->pre.dy;
-	cl.reps = (dx && mt->xDir) ? (abs(dx) / abs(mt->xDir)) : (abs(dy) / abs(mt->yDir));
-	cl.flipX = ((m.x1 < m.x0 && mt->xDir > 0) || (m.x1 > m.x0 && mt->xDir < 0)) ? 1 : 0;
-	cl.flipY = ((m.y1 < m.y0 && mt->yDir > 0) || (m.y1 > m.y0 && mt->yDir < 0)) ? 1 : 0;
-	
-	// checking if there is a piece in between (king not included) (if there is, then check bit will be 0)
-	int x = piece->x + mt->pre.dx, y = piece->y + mt->pre.dy;
-	for (size_t i = 0; i < cl.reps - 1; i++)
-	{
-		x += cl.flipX ? -mt->xDir : mt->xDir;
-		y += cl.flipY ? -mt->yDir : mt->yDir;
-
-		if (board->squares[y * 8 + x] && !board->pieces[board->squares[y * 8 + x] & 0b1111111].ptemplate->king) {
-			cl.check = 0;
-			break;
+	CHECKLINE cl = {
+		.col = piece->col ? 0 : 1,
+		.move = (MOVE) {
+			.x0 = piece->x,
+			.y0 = piece->y,
+			.x1 = _x,
+			.y1 = _y
 		}
-	}
+	};
 
-	addCheckLine(b, cl);
+	MOVE_TEMPLATE* mt;
+
+	for (size_t i = 0; i < piece->ptemplate->nMoves; i++)
+	{
+		mt = piece->ptemplate->moves + i;
+
+		if (mt->cantCap || (mt->init && piece->moved)) // this move can not be used (anymore) to capture the king
+			continue;
+
+		if (!testMoveOnTempl(&m, mt, piece->col))// not an appropriate MOVE_TEMPLATE
+			continue;
+
+		cl.mTemplate = mt;
+		if (board->squares[_y * 8 + _x] && board->pieces[board->squares[_y * 8 + _x] & 0b1111111].ptemplate->king) {
+			cl.direct = 1;
+		}
+		else {
+			cl.direct = 0;
+		}
+		int dx = ((int)m.x1 - (int)m.x0 - (int)mt->pre.dx);
+		int dy = ((int)m.y1 - (int)m.y0 - (int)mt->pre.dy);
+		if (piece->col)
+			dy *= -1;
+
+		cl.flipX = mt->flipX && ((mt->xDir > 0) != (dx > 0));
+		cl.flipY = mt->flipY && ((mt->yDir > 0) != (dy > 0));
+
+		if (piece->col) {
+			dy *= -1;
+			cl.flipY = !cl.flipY;
+		}
+
+		cl.reps = (dx != 0) ? abs(dx / mt->xDir) : abs(dy / mt->yDir);
+
+		int x = piece->x + mt->pre.dx;
+		int y = piece->y + mt->pre.dy;
+
+		cl.check = 1;
+
+		if (dx) dx /= abs(dx);
+		if (dy) dy /= abs(dy);
+
+		// not counting start or end (0 repetitions or cl.reps repetitions)
+		for (size_t j = 1; j < cl.reps - 1; j++)
+		{
+			x += dx;
+			y += dy;
+
+			if (board->squares[y * 8 + x] && !(board->pieces[board->squares[y*8 + x] & 0b1111111].ptemplate->king)) {
+				cl.check = 0;
+				break; // TODO var for number of blocking pieces
+			}
+		}
+
+		addCheckLine(board, cl);
+	}
 }
 
 void createCheckLineTarget(void* b, int _x, int _y, int col) {
@@ -643,7 +698,7 @@ void createCheckLineTarget(void* b, int _x, int _y, int col) {
 		m.x0 = piece->x;
 		m.y0 = piece->y;
 
-		MOVE_TEMPLATE* mt = testMove(&m, *piece->ptemplate, board->pieces[i].col);
+		MOVE_TEMPLATE* mt = testMove(&m, piece->ptemplate, board->pieces[i].col);
 
 		if (!mt) // this piece doesn't attack (_x, _y)
 			continue;

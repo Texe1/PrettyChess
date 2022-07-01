@@ -79,9 +79,13 @@ inline int getMaxMoveCount(MOVE_TEMPLATE*);
 
 int _move(void*, MOVE*, char save);
 
+MOVE_TEMPLATE* testMove(MOVE* move, PIECE_TEMPLATE* templ, char col);
+
+int testMoveOnTempl(MOVE* move, MOVE_TEMPLATE* templ, char col);
+
 void evolve(void* board, int type);
 
-int isInCheckLine(int x, int y, void* cl, char infRep);
+int isInCheckLine(int x, int y, void* cl);
 
 MOVE_CONTAINER getAllMoves(void* b);
 
