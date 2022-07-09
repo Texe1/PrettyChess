@@ -286,6 +286,21 @@ MOVE* funnyMovesStd(PIECE* piece, _BOARD* board, char checkCheck) {
 		if (!moves)
 			return NULL;
 
+		for (size_t i = 0; i < board->nCheckLines; i++)
+		{
+			CHECKLINE* cl = board->checkLines + i;
+
+			int j = isInCheckLine(lastMove->x1, lastMove->y1, cl);
+			int k = isInCheckLine(piece->x, piece->y, cl);
+
+			if (cl->nBtw <= 2) {
+				if (((j ^ k) && cl->nBtw <= 1) 
+					|| (j && k)) {
+					return NULL;
+				}
+			}
+		}
+
 		moves[0].cap = 1;
 		moves[0].valid = 1;
 		moves[0].x0 = piece->x;

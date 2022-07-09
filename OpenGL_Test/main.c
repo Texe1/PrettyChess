@@ -36,8 +36,8 @@ int gameCtr = 0;
 
 int main()
 {
-    //long long t = time(0);
-    long long t = 1655142240;
+    long long t = time(0);
+    //long long t = 1655142240;
 
     srand(t);
 
@@ -238,7 +238,7 @@ int main()
         unsigned int x = 230000;
 
         //Sleep(500);
-        while (--x && !b->end) {
+        /*while (--x && !b->end) {
             PIECE* randPiece = b->pieces + (rand() % b->nPieces);
 
             if (!randPiece->present || randPiece->col != b->turn)
@@ -260,12 +260,6 @@ int main()
         }
 
         if (!b->end) {
-            printf("CheckLines:\n");
-            for (size_t i = 0; i < b->nCheckLines; i++)
-            {
-                printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d, reps: %d\n", (char)('a' + b->checkLines[i].move.x0), (char)('1' + b->checkLines[i].move.y0), (char)('a' + b->checkLines[i].move.x1), (char)('1' + b->checkLines[i].move.y1), b->checkLines[i].check, b->checkLines[i].direct, b->checkLines[i].col, b->checkLines[i].reps);
-            }
-            printf("\n");
 
             if (x == 0) {
                 b->end = b->turn ? 3 : 4;
@@ -277,7 +271,7 @@ int main()
                     b->end = 7;
                 }
             }
-        }
+        }*/
 
         if (b->end) {
             if (++timer > 10) {
@@ -294,7 +288,7 @@ int main()
                 case 2:
                     if (MessageBox(glfwGetWin32Window(window), L"Stellungswiederholung", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
                         break;
-                    }
+                    }*/
                 case 3:
                     if (MessageBox(glfwGetWin32Window(window), L"Patt:\nSchwarz hat keine legalen Züge", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
                         break;
@@ -303,7 +297,7 @@ int main()
                     if (MessageBox(glfwGetWin32Window(window), L"Patt:\nWeiß hat keine legalen Züge", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
                         break;
                     }
-                case 5:
+                /*case 5:
                     if (MessageBox(glfwGetWin32Window(window), L"Weiß hat gewonnen", L"Schachmatt", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
                         break;
                     }
@@ -554,7 +548,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
                     printf("CheckLines:\n");
                     for (size_t i = 0; i < b->nCheckLines; i++)
                     {
-                        printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d\n", (char)('a' + b->checkLines[i].move.x0), (char)('1' + b->checkLines[i].move.y0), (char)('a' + b->checkLines[i].move.x1), (char)('1' + b->checkLines[i].move.y1), b->checkLines[i].check, b->checkLines[i].direct, b->checkLines[i].col);
+                        printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d, nBtw: %d\n", (char)('a' + b->checkLines[i].move.x0), (char)('1' + b->checkLines[i].move.y0), (char)('a' + b->checkLines[i].move.x1), (char)('1' + b->checkLines[i].move.y1), b->checkLines[i].check, b->checkLines[i].direct, b->checkLines[i].col, b->checkLines[i].nBtw);
                     }
                     printf("\n");
                     if (possibleMoves)

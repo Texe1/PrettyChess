@@ -163,6 +163,12 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 		MOVE* move = moves;
 		for (size_t k = 0; k < j; k++) {
 			move = moves + k;
+
+			if (move->x0 == move->x1 && move->y0 == move->y1) {
+				move->valid = 0;
+				continue;
+			}
+
 			for (i = 0; i < board->nCheckLines; i++)
 			{
 
@@ -179,30 +185,17 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 						break;
 					}
 				}
-				if (cl->direct && cl->check && !isInCheckLine(move->x1, move->y1, cl) && !(move->x1 == cl->move.x0 && move->y1 == cl->move.y0)) {
+				else if (cl->direct && cl->check && !isInCheckLine(move->x1, move->y1, cl)
+					&& (move->x1 != cl->move.x0 || move->y1 != cl->move.y0)) {
 					move->valid = 0;
 					break;
 				}
-
-				if (!cl->check && cl->direct && isInCheckLine(move->x0, move->y0, cl) && !isInCheckLine(move->x1, move->y1, cl) && !(move->x1 == cl->move.x0 && move->y1 == cl->move.y0)) {
-					move->valid = 0;
-					for (size_t i = 0; i < board->nPieces; i++)
-					{
-						PIECE* piece = board->pieces + i;
-						if (piece == p)
-							continue;
-
-						if (!board->pieces[i].present || (piece->x == p->x && piece->y == p->y))
-							continue;
-
-						if (!piece->ptemplate->king && isInCheckLine(piece->x, piece->y, cl)) {
-							move->valid = 1;
-							isInCheckLine(piece->x, piece->y, cl);
-							break;
-						}
-					}
-					if (!move->valid)
+				else if (!cl->check && cl->direct && isInCheckLine(move->x0, move->y0, cl) && !isInCheckLine(move->x1, move->y1, cl)
+					&& !(move->x1 == cl->move.x0 && move->y1 == cl->move.y0)) { // would move out of checkLine, revealing the King
+					if (cl->nBtw <= 1) {
+						move->valid = 0;
 						break;
+					}
 				}
 
 				move->valid = 1;
@@ -307,6 +300,12 @@ int _move(void* b, MOVE* m, char save) {
 	_BOARD* board = (_BOARD*)b;
 
 	int index = m->y0 * 8 + m->x0;
+	int destIndex = m->y1 * 8 + m->x1;
+
+	if (board->squares[destIndex]) {
+		m->cap = 1;
+	}
+
 	if (board->squares[index]) {
 
 		// if it's the king, storing possible moves for later
@@ -314,8 +313,7 @@ int _move(void* b, MOVE* m, char save) {
 		if (board->pieces[board->squares[index] & 0b1111111].ptemplate->king) {
 			movesBefore = getPossibleMoves(board->pieces + (board->squares[index] & 0b1111111), b, 0, 1);
 		}
-
-		int destIndex = m->y1 * 8 + m->x1;
+		
 		board->pieces[board->squares[index] & 0b1111111].x = m->x1;
 		board->pieces[board->squares[index] & 0b1111111].y = m->y1;
 		board->pieces[board->squares[index] & 0b1111111].moved = 1;
@@ -396,25 +394,20 @@ int _move(void* b, MOVE* m, char save) {
 					&& !((m->x1 == board->checkLines[i].move.x1) && (m->y1 == board->checkLines[i].move.y1))
 					) {
 					board->checkLines[i].check = 0;
+					if(!m->cap && !isInCheckLine(m->x0, m->y0, board->checkLines + i))
+						board->checkLines[i].nBtw++;
 				}
 
 				// moving out of checkLine (setting check bit to 1)
-				if (!(m->x0 == board->checkLines[i].move.x1 && m->y0 == board->checkLines[i].move.y1) 
-					&& (isInCheckLine(m->x0, m->y0, board->checkLines + i) 
+				if (
+					(m->x0 != board->checkLines[i].move.x1 || m->y0 != board->checkLines[i].move.y1) 
+					&& isInCheckLine(m->x0, m->y0, board->checkLines + i) 
 						&& (!isInCheckLine(m->x1, m->y1, board->checkLines + i) 
-							|| ((m->x1 == board->checkLines[i].move.x1) 
-							&& (m->y1 == board->checkLines[i].move.y1))
+							|| ((m->x1 == board->checkLines[i].move.x1) && (m->y1 == board->checkLines[i].move.y1))
 							)
-						)
 					) {
-					board->checkLines[i].check = 1;
-					for (size_t j = 0; j < board->nPieces; j++)
-					{
-						PIECE* other = board->pieces + j;
-						if ((other != piece) && isInCheckLine(other->x, other->y, board->checkLines + i) &&
-							!(other->x == board->checkLines[i].move.x1 && other->y == board->checkLines[i].move.y1)) {
-							board->checkLines[i].check = 0;
-						}
+					if (--(board->checkLines[i].nBtw) == 0) {
+						board->checkLines[i].check = 1;
 					}
 					
 				}
@@ -434,12 +427,23 @@ int _move(void* b, MOVE* m, char save) {
 			if (piece->ptemplate->king) {
 				MOVE_CONTAINER newMoves = getPossibleMoves(board->pieces + (board->squares[destIndex] & 0b1111111), b, 0, 1);
 
-				MOVE kingCap = { 0 };
-				kingCap.x0 = m->x1;
-				kingCap.y0 = m->y1;
-
 				if (newMoves.moves) {
+					// removing all checkLines of own color
+					for (int i = 0; i < board->nCheckLines; i++)
+					{
+						if (board->checkLines[i].col == piece->col) {
+							removeCheckLine(board, i);
+						}
+					}
 
+					// adding new checkLines
+					createCheckLineTarget(board, m->x1, m->y1, piece->col);
+					for (size_t i = 0; i < newMoves.nMoves; i++)
+					{
+						createCheckLineTarget(board, newMoves.moves[i].x1, newMoves.moves[i].y1, piece->col);
+					}
+
+					/*
 					// changing direct bit
 					for (size_t i = 0; i < board->nCheckLines; i++)
 					{
@@ -487,6 +491,7 @@ int _move(void* b, MOVE* m, char save) {
 							createCheckLineTarget(b, newMoves.moves[i].x1, newMoves.moves[i].y1, piece->col);
 						}
 					}
+					*/
 
 					free(newMoves.moves);
 					newMoves = (MOVE_CONTAINER){ 0 };
@@ -505,6 +510,14 @@ int _move(void* b, MOVE* m, char save) {
 
 		printf("made move: %c%c->%c%c\n", (char)('a' + m->x0), (char)('1' + m->y0), (char)('a' + m->x1), (char)('1' + m->y1));
 		print_board(b, -1);
+
+		printf("CheckLines:\n");
+		for (size_t i = 0; i < board->nCheckLines; i++)
+		{
+			printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d, reps: %d, nBtw: %d\n", (char)('a' + board->checkLines[i].move.x0), (char)('1' + board->checkLines[i].move.y0), (char)('a' + board->checkLines[i].move.x1), (char)('1' + board->checkLines[i].move.y1), board->checkLines[i].check, board->checkLines[i].direct, board->checkLines[i].col, board->checkLines[i].reps, board->checkLines[i].nBtw);
+		}
+		printf("\n");
+
 
 		return 0;
 	}
@@ -601,8 +614,6 @@ void createCheckLine(void* b, int pieceIndex, int _x, int _y) {
 	_BOARD* board = (_BOARD*)b;
 	PIECE* piece = board->pieces + pieceIndex;
 
-	printf("%d%d\n", piece->x, piece->y);
-
 	// creating a move struct for the testMove() function
 	MOVE m = { 0 };
 	m.x0 = piece->x;
@@ -617,7 +628,8 @@ void createCheckLine(void* b, int pieceIndex, int _x, int _y) {
 			.y0 = piece->y,
 			.x1 = _x,
 			.y1 = _y
-		}
+		},
+		.nBtw = 0
 	};
 
 	MOVE_TEMPLATE* mt;
@@ -663,14 +675,15 @@ void createCheckLine(void* b, int pieceIndex, int _x, int _y) {
 		if (dy) dy /= abs(dy);
 
 		// not counting start or end (0 repetitions or cl.reps repetitions)
-		for (size_t j = 1; j < cl.reps - 1; j++)
+		for (size_t j = 1; j < cl.reps; j++)
 		{
 			x += dx;
 			y += dy;
 
 			if (board->squares[y * 8 + x] && !(board->pieces[board->squares[y*8 + x] & 0b1111111].ptemplate->king)) {
 				cl.check = 0;
-				break; // TODO var for number of blocking pieces
+				cl.nBtw++;
+				//break; // TODO var for number of blocking pieces
 			}
 		}
 
@@ -718,6 +731,7 @@ void createCheckLineTarget(void* b, int _x, int _y, int col) {
 		cl.reps = (dx && mt->xDir) ? (abs(dx) / abs(mt->xDir)) : (abs(dy) / abs(mt->yDir));
 		cl.flipX = ((m.x1 < m.x0&& mt->xDir > 0) || (m.x1 > m.x0 && mt->xDir < 0)) ? 1 : 0;
 		cl.flipY = ((m.y1 < m.y0&& mt->yDir > 0) || (m.y1 > m.y0 && mt->yDir < 0)) ? 1 : 0;
+		cl.nBtw = 0;
 
 		int x = piece->x + mt->pre.dx, y = piece->y + mt->pre.dy;
 		for (size_t i = 0; i < cl.reps - 1; i++)
@@ -727,7 +741,7 @@ void createCheckLineTarget(void* b, int _x, int _y, int col) {
 
 			if (board->squares[y * 8 + x] && !board->pieces[board->squares[y * 8 + x] & 0b1111111].ptemplate->king) {
 				cl.check = 0;
-				break;
+				cl.nBtw++;
 			}
 		}
 
@@ -748,7 +762,6 @@ void clearCheckLines(void* b, int _x, int _y) {
 			i--;
 		}
 	}
-	printf("\n");
 }
 
 // clears checkLines attacking (_x, _y)
@@ -772,7 +785,8 @@ void evolve(void* b, int type) {
 	PIECE* piece = board->pieces + (board->squares[board->evolveIndex] & 0b1111111);
 
 	if ((board->evolve) && (piece->ptemplate->evolveable) && (piece->ptemplate->evolveInto & (1 << type))) {
-		piece->ptemplate = &board->game.pieceTypes[type];
+		piece->ptemplate = board->game.pieceTypes + type;
+		printf("evolved to %s", piece->ptemplate->name);
 		board->evolve = 0;
 		clearCheckLines(b, piece->x, piece->y);
 
