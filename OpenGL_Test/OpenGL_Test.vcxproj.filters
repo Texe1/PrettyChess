@@ -27,6 +27,9 @@
     <ClCompile Include="schroedinger.c">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="Bot.c">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="basicShader.vert">
@@ -52,6 +55,9 @@
     <Image Include="ChessBoard.png">
       <Filter>Ressourcendateien</Filter>
     </Image>
+    <Image Include="ChessBoard_Flipped.png">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image.h">
@@ -70,6 +76,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="schroedinger.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="Bot.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

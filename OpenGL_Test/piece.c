@@ -16,223 +16,167 @@ MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char ra
 		maxMoves += getMaxMoveCount(mt);
 	}
 
-	MOVE* funnyMoves = board->game.funnyMoves(p, board, checkCheck);
-	int nFunnyMoves = 0;
+	MOVE_CONTAINER funnyMoves = board->game.funnyMoves(p, board, checkCheck, raw);
 
-	if (funnyMoves) {
-		MOVE m;
-		while ((m = funnyMoves[nFunnyMoves++]).valid);
-	}
+	MOVE_CONTAINER moves = { 0 };
 
-	MOVE* moves = malloc((maxMoves + nFunnyMoves) * sizeof(MOVE));
-	if (!moves)
+	moves.moves = malloc((maxMoves + funnyMoves.nMoves) * sizeof(MOVE));
+	if (!moves.moves)
 		return (MOVE_CONTAINER) { 0 };
 
 	// getting all possible moves
 	i = 0;
 	unsigned int j = 0;
-	MOVE m = { 0 };
-	m.valid = 1;
-	m.x0 = p->x;
-	m.y0 = p->y;
+	MOVE m = (MOVE){
+					.x0 = p->x,
+					.y0 = p->y,
+					.valid = 0,
+					.cap = 0,
+					.funny = 0
+	};
+
 	while (i < p->ptemplate->nMoves) {
 		mt = p->ptemplate->moves + i++;
-		int dx = mt->xDir;
-		int dy = !p->col ? mt->yDir : (-mt->yDir);
 
-		char std = 1;
-		char flipX = mt->flipX;
-		char flipY = mt->flipY;
-		char flipXY = flipX && flipY;
-		int preY = (!p->col) ? mt->pre.dy : -mt->pre.dy;
+		if (p->moved && mt->init)
+			continue;
 
-		for (int k = 1; k <= mt->maxRep; k++)
+		int xDir = mt->xDir;
+		int yDir = (p->col) ? -mt->yDir : mt->yDir;
+
+		char flips = 0b1 | (mt->flipX ? 2 : 0) | (mt->flipY ? 4 : 0) | ((mt->flipX && mt->flipY) ? 8 : 0);
+
+		int dx = xDir;
+		int dy = yDir;
+
+		int x = p->x + mt->pre.dx;
+		int y = p->y + (p->col ? -mt->pre.dy : mt->pre.dy);
+
+		for (size_t j = 1; j <= mt->maxRep; j++)
 		{
-
-			if (mt->init && p->moved)
-				continue;
-
-			unsigned char xPlus = ((((int)p->x + (int)dx + mt->pre.dx) >= 0) && (((int)p->x + (int)dx + mt->pre.dx) < 8));
-			unsigned char xMinus = ((((int)p->x - (int)dx + mt->pre.dx) >= 0) && (((int)p->x - (int)dx + mt->pre.dx) < 8));
-			unsigned char yPlus = ((((int)p->y + (int)dy + preY) >= 0) && (((int)p->y + (int)dy + preY) < 8));
-			unsigned char yMinus = ((((int)p->y - (int)dy + preY) >= 0) && (((int)p->y - (int)dy + preY) < 8));
-
-			if (!flipX && !flipY && !flipXY && !std)
+			if (flips == 0)
 				break;
 
-			if (std && xPlus && yPlus && !((dx + mt->pre.dx == 0) && (dy + preY == 0))) {
-				m.x1 = p->x + dx + mt->pre.dx;
-				m.y1 = p->y + dy + mt->pre.dy;
-
- 				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
-					if (!raw) {
-						if ((board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col) && !mt->cantCap && k >= mt->minRep) { // capturing
-							m.cap = 1;
-							moves[j++] = m;
-							m.cap = 0;
-						}
-						std = 0;
-					}
-					else
-						moves[j++] = m;
-				}
-				else if(!mt->mustCap && k >= mt->minRep) {
-					moves[j++] = m;
-				}
-			}
-
-			if (flipX && xMinus && yPlus && !((dx - mt->pre.dx == 0) && (dy + preY == 0))) { // flipped in X
-				m.x1 = p->x - dx + mt->pre.dx;
-				m.y1 = p->y + dy + mt->pre.dy;
-				
-				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
-					if (!raw) {
-						if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k >= mt->minRep) {// capturing
-							m.cap = 1;
-							moves[j++] = m;
-							m.cap = 0;
-						}
-						flipX = 0;
-					}
-					else
-						moves[j++] = m;
-
-				}
-				else if (!mt->mustCap && k >= mt->minRep) {
-					moves[j++] = m;
-				}
-			}
-
-			if (flipY && yMinus && xPlus && !((dx + mt->pre.dx == 0) && (dy - preY == 0))) { // flipped in Y
-				m.x1 = p->x + dx + mt->pre.dx;
-				m.y1 = p->y - dy + mt->pre.dy;
-
-				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
-					if (!raw) {
-						if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k >= mt->minRep) {// capturing
-							m.cap = 1;
-							moves[j++] = m;
-							m.cap = 0;
-						}
-						flipY = 0;
-					}
-					else
-						moves[j++] = m;
-				}
-				else if (!mt->mustCap && k >= mt->minRep) {
-					moves[j++] = m;
-				}
-			}
-
-			if (flipXY && xMinus && yMinus && !((dx - mt->pre.dx == 0) && (dy - preY == 0))) { // flipped in X and Y
-				m.x1 = p->x - dx + mt->pre.dx;
-				m.y1 = p->y - dy + mt->pre.dy;
-
-				if (board->squares[m.y1 * 8 + m.x1] && !mt->jump) {
-					if (!raw) {
-						if (board->pieces[board->squares[m.y1 * 8 + m.x1] & 0b111111].col != p->col && !mt->cantCap && k >= mt->minRep) {
-							m.cap = 1;
-							moves[j++] = m;
-							m.cap = 0;
-						}
-						flipXY = 0;
-					}
-					else
-						moves[j++] = m;
-				}
-				else if (!mt->mustCap) {
-					moves[j++] = m;
-				}
-			}
-
-			dx += mt->xDir;
-			dy += !p->col ? mt->yDir : (-mt->yDir);
-		}
-	}
-
-	if (funnyMoves) {
-		for (size_t k = 0; k < nFunnyMoves; k++)
-		{
-			moves[j++] = funnyMoves[k];
-		}
-		free(funnyMoves);
-	}
-
-	// New checkCheck
-	if (checkCheck) {
-		MOVE* move = moves;
-		for (size_t k = 0; k < j; k++) {
-			move = moves + k;
-
-			if (move->x0 == move->x1 && move->y0 == move->y1) {
-				move->valid = 0;
-				continue;
-			}
-
-			for (i = 0; i < board->nCheckLines; i++)
+			for (size_t l = 0; l < 4; l++)
 			{
-
-				CHECKLINE* cl = board->checkLines + i;
-
-				// checkLine for other Color (don't bother)
-				if (cl->col != p->col)
+				if (!(flips & (1 << l)))
 					continue;
 
-				// the king wants to move
-				if (p->ptemplate->king) {
-					if (cl->check && (move->x1 == cl->move.x1 && move->y1 == cl->move.y1)) {
-						move->valid = 0;
-						break;
+				int x1 = x + ((l & 1) ? -dx : dx);
+				int y1 = y + ((l & 2) ? -dy : dy);
+
+				if ((x1 > 7) || (x1 < 0) || (y1 > 7) || (y1 < 0)) {
+					flips &= ~(1 << l);
+					continue;
+				}
+
+				m.cap = 0;
+				m.valid = 1;
+				m.x0 = x;
+				m.y0 = y;
+				m.x1 = x1;
+				m.y1 = y1;
+
+				int squareIndex = m.y1 * 8 + m.x1;
+
+				if (!raw) {
+					if (board->squares[squareIndex]) {
+						flips &= ~(1 << l);
+						m.cap = 1;
+						if (board->pieces[board->squares[squareIndex] & 0b111111].col == p->col || mt->cantCap) {
+							m.valid = 0;
+							continue;
+						}
 					}
-				}
-				else if (cl->direct && cl->check && !isInCheckLine(move->x1, move->y1, cl)
-					&& (move->x1 != cl->move.x0 || move->y1 != cl->move.y0)) {
-					move->valid = 0;
-					break;
-				}
-				else if (!cl->check && cl->direct && isInCheckLine(move->x0, move->y0, cl) && !isInCheckLine(move->x1, move->y1, cl)
-					&& !(move->x1 == cl->move.x0 && move->y1 == cl->move.y0)) { // would move out of checkLine, revealing the King
-					if (cl->nBtw <= 1) {
-						move->valid = 0;
-						break;
+					else
+					{
+						if (mt->mustCap) {
+							m.valid = 0;
+							continue;
+						}
 					}
 				}
 
-				move->valid = 1;
+				// newest checkCheck
+				if(!raw && checkCheck) {
+					for (size_t k = 0; k < board->nCheckLines; k++)
+					{
+						CHECKLINE* cl = board->checkLines + k;
+
+						// can't move into checkLine
+						if (p->ptemplate->king) {
+							if ((cl->move.x1 == m.x1) && (cl->move.y1 == m.y1) && (cl->nBtw == 0)){
+								m.valid = 0;
+								break;
+							}
+						}
+						else {
+							if (cl->col == p->col	// own king is threatened
+								&& cl->nBtw == 0 && cl->direct // direct hit
+								&& ((cl->move.x0 != m.x1) || (cl->move.y0 != m.y1)) // not capturing threatening piece
+								&& (!isInCheckLine(m.x1, m.y1, cl))) { // destination not in checkLine
+								m.valid = 0;
+								break;
+							}
+
+							if ((cl->col == p->col) && isInCheckLine(p->x, p->y, cl) && !isInCheckLine(m.x1, m.y1, cl) && (cl->nBtw <= 1) && cl->direct // moving out of checkLine as only Piece
+								&& ((cl->move.x0 != m.x1) || (cl->move.y0 != m.y1))) { // not capturing threatening piece
+								m.valid = 0;
+								break;
+							}
+						}
+					}
+				}
+
+				if (m.valid) {
+					moves.moves[moves.nMoves] = m;
+					moves.nMoves++;
+				}
+
 			}
+
+			dx += xDir;
+			dy += yDir;
 		}
 
-		// shifting moves so that there are no invalid moves
-		for (size_t k = 0; k < j; k++)
-		{
-			if (!moves[k].valid) {
-				j--;
-				for (size_t l = k; l < j; l++)
-				{
-					moves[l] = moves[l + 1];
-				}
-				k--;
-			}
-		}
 	}
 
-	MOVE_CONTAINER mc = { 0 };
-	mc.moves = moves;
-	mc.nMoves = j;
-	if (j == 0) {
-		if(moves)
-			free(moves);
+	// adding funnyMoves (TODO!)
+	if (funnyMoves.moves) {
+		for (size_t k = 0; k < funnyMoves.nMoves; k++)
+		{
+			moves.moves[moves.nMoves] = funnyMoves.moves[k];
+			moves.nMoves++;
+		}
+		free(funnyMoves.moves);
+	}
+
+	// shifting moves so that there are no invalid moves
+	/*for (size_t k = 0; k < moves.nMoves; k++)
+	{
+		if (!moves.moves[k].valid) {
+			moves.nMoves--;
+			for (size_t l = k; l < moves.nMoves; l++)
+			{
+				moves.moves[l] = moves.moves[l + 1];
+			}
+			k--;
+		}
+	}*/
+	if (moves.nMoves == 0) {
+		if(moves.moves)
+			free(moves.moves);
+
+		return (MOVE_CONTAINER) { 0 };
 	}
 	else
 	{
-		void* realloced = realloc(mc.moves, sizeof(MOVE) * j);
+		void* realloced = realloc(moves.moves, sizeof(MOVE) * moves.nMoves);
 		if (realloced) {
-			mc.moves = realloced;
-			return mc;
+			moves.moves = realloced;
+			return moves;
 		}
 	}
-
-	return (MOVE_CONTAINER) { 0 };
 
 }
 
@@ -302,226 +246,131 @@ int _move(void* b, MOVE* m, char save) {
 	int index = m->y0 * 8 + m->x0;
 	int destIndex = m->y1 * 8 + m->x1;
 
-	if (board->squares[destIndex]) {
-		m->cap = 1;
+	
+	if (m->funny) {
+		board->game.doFunnyMove(b, m);
 	}
+	else {
+		if (!board->squares[m->y0 * 8 + m->x0])
+			return 0;
+		
+		PIECE* piece = board->pieces + (board->squares[index] & 0b1111111);
 
-	if (board->squares[index]) {
-
-		// if it's the king, storing possible moves for later
 		MOVE_CONTAINER movesBefore = { 0 };
-		if (board->pieces[board->squares[index] & 0b1111111].ptemplate->king) {
-			movesBefore = getPossibleMoves(board->pieces + (board->squares[index] & 0b1111111), b, 0, 1);
+
+		if (piece->ptemplate->king) {
+			movesBefore = getPossibleMoves(piece, b, 0, 1);
 		}
 		
-		board->pieces[board->squares[index] & 0b1111111].x = m->x1;
-		board->pieces[board->squares[index] & 0b1111111].y = m->y1;
-		board->pieces[board->squares[index] & 0b1111111].moved = 1;
-		if (m->cap && board->squares[destIndex] && !m->funny) {
-			if (board->pieces[board->squares[destIndex] & 0b1111111].col)
+		// changing coords
+		piece->x = m->x1;
+		piece->y = m->y1;
+		piece->moved = 1;
+
+		// checking for capped piece
+		if (m->cap) {
+			PIECE* cappedPiece = board->pieces + (board->squares[m->y1 * 8 + m->x1] & 0b1111111);
+			cappedPiece->present = 0;
+			if (cappedPiece->col)
 				board->bl_pieceCount--;
 			else
 				board->wh_pieceCount--;
+		}
 
-			board->pieces[board->squares[destIndex] & 0b1111111].present = 0;
-			board->nPositions = 0;
+		board->squares[m->y1 * 8 + m->x1] =  (1 << 7) | (int)(piece - board->pieces);
+		board->squares[m->y0 * 8 + m->x0] = 0;
 
+		//evolving
+		{
+			PIECE_TEMPLATE* templ = piece->ptemplate;
+
+			if (templ->evolveable
+				&& ((templ->evolveAtX == (1 << 3)) || (templ->evolveAtX == piece->x))
+				&& ((templ->evolveAtY == (1 << 3)) || (templ->evolveAtY == (piece->col ? (7 - piece->y) : piece->y)))) {
+				board->evolve = 1;
+				board->evolveIndex = piece->y * 8 + piece->x;
+			}
+		}
+
+		// checkLines
+		{
 			for (size_t i = 0; i < board->nCheckLines; i++)
 			{
-				if (board->checkLines[i].move.x0 == m->x1 && board->checkLines[i].move.y0 == m->y1) {
-					removeCheckLine(board, i);
+				CHECKLINE* cl = board->checkLines + i;
+				if (isInCheckLine(m->x0, m->y0, cl) && !((m->x0 == cl->move.x1) && (m->y0 == cl->move.y1))) {
+					board->checkLines[i].nBtw--;
+				}
+				if (!m->cap && isInCheckLine(m->x1, m->y1, cl) && !((m->x1 == cl->move.x1) && (m->y1 == cl->move.y1))) {
+					board->checkLines[i].nBtw++;
 				}
 			}
 
-		}
-		else if(m->cap || m->funny) {
-			board->game.doFunnyMove(&board->pieces[board->squares[m->y0 * 8 +m->x0] & 0b1111111], board, m);
-		}
-		board->squares[destIndex] = board->squares[index];
-		board->squares[index] = 0;
+			clearCheckLines(b, m->x0, m->y0);
+			if (m->cap) {
+				clearCheckLines(b, m->x1, m->y1);
+			}
 
-		PIECE* piece = board->pieces + (board->squares[destIndex] & 0b1111111);
-		
-		// evolving
-		if (piece->ptemplate->evolveable) {
-			if ((piece->ptemplate->evolveAtX == 1 << 3 || piece->ptemplate->evolveAtX == destIndex % 8)
-				&& (piece->ptemplate->evolveAtY == 1 << 3 || piece->ptemplate->evolveAtY == (piece->col ? (7 - destIndex / 8) : (destIndex / 8)))) {
-				board->evolve = 1;
-				board->evolveIndex = destIndex;
+			
+			PIECE* king = board->pieces;
+			while (!king->ptemplate->king || king->col == piece->col)
+				king++;
+			MOVE_CONTAINER kingMoves = getPossibleMoves(king, b, 0, 1);
+
+			createCheckLine(b, (int)(piece - board->pieces), king->x, king->y);
+			for (size_t i = 0; i < kingMoves.nMoves; i++)
+			{
+				createCheckLine(b, (int)(piece - board->pieces), kingMoves.moves[i].x1, kingMoves.moves[i].y1);
+			}
+
+
+			if (piece->ptemplate->king) {
+				for (size_t i = 0; i < board->nCheckLines; i++)
+				{
+					if (board->checkLines[i].col == piece->col) {
+						removeCheckLine(b, i);
+					}
+				}
+
+				MOVE_CONTAINER moves = getPossibleMoves(piece, b, 0, 1);
+				createCheckLineTarget(b, piece->x, piece->y, piece->col);
+				for (size_t i = 0; i < moves.nMoves; i++)
+				{
+					createCheckLineTarget(b, moves.moves[i].x1, moves.moves[i].y1, piece->col);
+				}
+
 			}
 		}
+	}
+
+	board->turn ^= 1;
+	board->end = board->game.isDraw(board);
+	if (save) {
+		// saving position
+		savePos(board);
 
 		// saving move
-		if (board->nMoves % 10 == 0) {
-			if (board->nMoves == 0) {
-				board->moves = (MOVE*)malloc(10 * sizeof(MOVE));
-				if (!board->moves) {
-					printf("FATAL ERROR: HAVING PROBLEMS WITH HEAP ALLOCATION");
-					exit(1);
-				}
-			}
-			else 
-			{
-				MOVE* realloced = (MOVE*)realloc(board->moves, sizeof(MOVE) * (board->nMoves + 10));
-				if (!realloced) {
-					printf("FATAL ERROR: HAVING PROBLEMS WITH HEAP ALLOCATION");
-					exit(1);
-				}
-				board->moves = realloced;
-			}
-		}
-		board->moves[board->nMoves++] = *m;
-
-		// updating checkLines
 		{
-			// getting king of opposite color
-			PIECE* king = board->pieces;
-			while (!(king)->ptemplate->king || ((king)->col == piece->col))
-				king++;
-
-			// moving away from CheckLine
-			clearCheckLines(b, m->x0, m->y0);
-
-			// captured pieces may have had checkLines
-			if(m->cap)
-				clearCheckLines(b, m->x1, m->y1);
-
-			// manipulating other checkLines
-			for (size_t i = 0; i < board->nCheckLines; i++)
-			{
-				// moving into existing checkLine (setting check bit to 0)
-				if (isInCheckLine(m->x1, m->y1, board->checkLines + i) 
-					&& !((m->x1 == board->checkLines[i].move.x1) && (m->y1 == board->checkLines[i].move.y1))
-					) {
-					board->checkLines[i].check = 0;
-					if(!m->cap && !isInCheckLine(m->x0, m->y0, board->checkLines + i))
-						board->checkLines[i].nBtw++;
-				}
-
-				// moving out of checkLine (setting check bit to 1)
-				if (
-					(m->x0 != board->checkLines[i].move.x1 || m->y0 != board->checkLines[i].move.y1) 
-					&& isInCheckLine(m->x0, m->y0, board->checkLines + i) 
-						&& (!isInCheckLine(m->x1, m->y1, board->checkLines + i) 
-							|| ((m->x1 == board->checkLines[i].move.x1) && (m->y1 == board->checkLines[i].move.y1))
-							)
-					) {
-					if (--(board->checkLines[i].nBtw) == 0) {
-						board->checkLines[i].check = 1;
+			if (board->nMoves % 10 == 0) {
+				if (board->nMoves == 0) {
+					board->moves = (MOVE*)malloc(10 * sizeof(MOVE));
+					if (!board->moves) {
+						printf("FATAL ERROR: HAVING PROBLEMS WITH HEAP ALLOCATION");
+						exit(1);
 					}
-					
+				}
+				else
+				{
+					MOVE* realloced = (MOVE*)realloc(board->moves, sizeof(MOVE) * (board->nMoves + 10));
+					if (!realloced) {
+						printf("FATAL ERROR: HAVING PROBLEMS WITH HEAP ALLOCATION");
+						exit(1);
+					}
+					board->moves = realloced;
 				}
 			}
-
-			// moving to new CheckLine
-			createCheckLine(b, (int)(piece - board->pieces), king->x, king->y);
-
-			// looking for every square the king can move to (these CheckLines will have the direct bit set to 0)
-			MOVE_CONTAINER move = getPossibleMoves(king, board, 0, 1);
-			for (int i = 0; i < move.nMoves; i++)
-			{
-				createCheckLine(b, (int)(piece - board->pieces), move.moves[i].x1, move.moves[i].y1);
-			}
-
-			// king can move out of checkLines, into new ones
-			if (piece->ptemplate->king) {
-				MOVE_CONTAINER newMoves = getPossibleMoves(board->pieces + (board->squares[destIndex] & 0b1111111), b, 0, 1);
-
-				if (newMoves.moves) {
-					// removing all checkLines of own color
-					for (int i = 0; i < board->nCheckLines; i++)
-					{
-						if (board->checkLines[i].col == piece->col) {
-							removeCheckLine(board, i);
-						}
-					}
-
-					// adding new checkLines
-					createCheckLineTarget(board, m->x1, m->y1, piece->col);
-					for (size_t i = 0; i < newMoves.nMoves; i++)
-					{
-						createCheckLineTarget(board, newMoves.moves[i].x1, newMoves.moves[i].y1, piece->col);
-					}
-
-					/*
-					// changing direct bit
-					for (size_t i = 0; i < board->nCheckLines; i++)
-					{
-						if (board->checkLines[i].direct && board->checkLines[i].col == piece->col) {
-							board->checkLines[i].direct = 0;
-						}
-						else if (board->checkLines[i].move.x1 == piece->x && board->checkLines[i].move.y1 == piece->y) {
-
-							board->checkLines[i].direct = 1;
-						}
-					}
-
-					// removing redundant checkLines
-					for (size_t i = 0; i < movesBefore.nMoves; i++)
-					{
-						// checking if old move is also in newMoves
-						char isNew = 0;
-						for (size_t j = 0; j < newMoves.nMoves; j++)
-						{
-							if (movesBefore.moves[i].x1 == newMoves.moves[j].x1 && movesBefore.moves[i].y1 == newMoves.moves[j].y1) {
-								isNew = 1;
-								break;
-							}
-						}
-						if (!isNew && !(movesBefore.moves[i].x1 == piece->x && movesBefore.moves[i].y1 == piece->y)) {
-							clearCheckLineTarget(b, movesBefore.moves[i].x1, movesBefore.moves[i].y1, piece->col);
-						}
-					}
-
-					// adding necessessary checkLines
-					for (size_t i = 0; i < newMoves.nMoves; i++)
-					{
-						// checking if old moves also appears in movesBefore (checkLines are already there)
-						char isOld = 0;
-						for (size_t j = 0; j < movesBefore.nMoves; j++)
-						{
-							if (movesBefore.moves[j].x1 == newMoves.moves[i].x1 && movesBefore.moves[j].y1 == newMoves.moves[i].y1) {
-								isOld = 1;
-								break;
-							}
-						}
-
-						if (!isOld && (newMoves.moves[i].x1 != m->x0 || newMoves.moves[i].y1 != m->y0)) { // there are no preexisting checkLines here
-
-							createCheckLineTarget(b, newMoves.moves[i].x1, newMoves.moves[i].y1, piece->col);
-						}
-					}
-					*/
-
-					free(newMoves.moves);
-					newMoves = (MOVE_CONTAINER){ 0 };
-
-					free(movesBefore.moves);
-					movesBefore = (MOVE_CONTAINER){ 0 };
-				}
-			}
+			board->moves[board->nMoves++] = *m;
 		}
-
-		board->turn ^= 1;
-
-		if(save) savePos(board);
-		board->end = board->game.isDraw(board); // returns 0 when no draw
-
-
-		printf("made move: %c%c->%c%c\n", (char)('a' + m->x0), (char)('1' + m->y0), (char)('a' + m->x1), (char)('1' + m->y1));
-		print_board(b, -1);
-
-		printf("CheckLines:\n");
-		for (size_t i = 0; i < board->nCheckLines; i++)
-		{
-			printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d, reps: %d, nBtw: %d\n", (char)('a' + board->checkLines[i].move.x0), (char)('1' + board->checkLines[i].move.y0), (char)('a' + board->checkLines[i].move.x1), (char)('1' + board->checkLines[i].move.y1), board->checkLines[i].check, board->checkLines[i].direct, board->checkLines[i].col, board->checkLines[i].reps, board->checkLines[i].nBtw);
-		}
-		printf("\n");
-
-
-		return 0;
 	}
-	else return 1;
 }
 
 MOVE_CONTAINER getAllMoves(void* b) {
@@ -576,6 +425,18 @@ MOVE_CONTAINER getAllMoves(void* b) {
 	MOVE_CONTAINER res = { 0 };
 	res.moves = moves;
 	res.nMoves = nMoves;
+	// shifting moves so that there are no invalid moves
+	for (size_t k = 0; k < res.nMoves; k++)
+	{
+		if (!res.moves[k].valid) {
+			res.nMoves--;
+			for (size_t l = k; l < res.nMoves; l++)
+			{
+				res.moves[l] = res.moves[l + 1];
+			}
+			k--;
+		}
+	}
 	return res;
 
 }
@@ -583,6 +444,9 @@ MOVE_CONTAINER getAllMoves(void* b) {
 int isInCheckLine(int x, int y, void* c)
 {
 	CHECKLINE* cl = (CHECKLINE*)c;
+
+	if (c == NULL || cl->mTemplate == NULL)
+		return 0;
 
 	int dx = x - cl->move.x0 - cl->mTemplate->pre.dx;
 	int dy = y - cl->move.y0 - cl->mTemplate->pre.dy;
@@ -694,7 +558,7 @@ void createCheckLine(void* b, int pieceIndex, int _x, int _y) {
 void createCheckLineTarget(void* b, int _x, int _y, int col) {
 	_BOARD* board = (_BOARD*)b;
 
-	// preparing MOVE struct for later tesMove() calls
+	// preparing MOVE struct for later testMove() calls
 	MOVE m = { 0 };
 	m.x1 = _x;
 	m.y1 = _y;

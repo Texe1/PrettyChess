@@ -142,6 +142,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Bot.c" />
     <ClCompile Include="game.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="piece.c" />
@@ -156,9 +157,11 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="ChessBoard.png" />
+    <Image Include="ChessBoard_Flipped.png" />
     <Image Include="Chess_Pieces.png" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Bot.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="piece.h" />
     <ClInclude Include="schroedinger.h" />

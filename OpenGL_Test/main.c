@@ -13,6 +13,7 @@
 #include "piece.h"
 #include "game.h"
 #include "schroedinger.h"
+#include "Bot.h"
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
@@ -29,8 +30,7 @@ _BOARD* b;
 char selected = 0;
 int selectedX = 0;
 int selectedY = 0;
-int nPossibleMoves = 0;
-MOVE* possibleMoves = NULL;
+MOVE_CONTAINER possibleMoves = { 0 };
 int timer = 0;
 int gameCtr = 0;
 
@@ -47,17 +47,20 @@ int main()
 
     b = createStdBoard();
     //b = createSchroedingerBoard();
+    b->blackComputer = 1;
+    b->whiteComputer = 0;
+    //printf("%d\n", evaluateBoard(b));
 
     system("pause");
 
-    print_board(b, 0);
+    //print_board(b, 0);
 
-    printf("CheckLines:\n");
+    /*printf("CheckLines:\n");
     for (size_t i = 0; i < b->nCheckLines; i++)
     {
         printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d\n", (char)('a' + b->checkLines[i].move.x0), (char)('1' + b->checkLines[i].move.y0), (char)('a' + b->checkLines[i].move.x1), (char)('1' + b->checkLines[i].move.y1), b->checkLines[i].check, b->checkLines[i].direct, b->checkLines[i].col);
     }
-    printf("\n");
+    printf("\n");*/
 
     GLFWwindow* window;
 
@@ -107,7 +110,7 @@ int main()
     unsigned int BoardVbo;
     glGenBuffers(1, &BoardVbo);
     glBindBuffer(GL_ARRAY_BUFFER, BoardVbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
 
     unsigned int ebo;
     glGenBuffers(1, &ebo);
@@ -198,6 +201,7 @@ int main()
     };
 
     unsigned int boardTexture = loadTexture("ChessBoard.png");
+    unsigned int boardTextureFlipped = loadTexture("ChessBoard_Flipped.png");
 
     glUseProgram(piecesShaderProgram);
     for (size_t i = 0; i < sizeof(pieceTextures) / 4; i++)
@@ -218,108 +222,40 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
-        glClearColor(0.03f, 0.04f, 0.03f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        {
+            glClearColor(0.03f, 0.04f, 0.03f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        glBindVertexArray(boardVao);
-        glUseProgram(shaderProgram);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(piecesVao);
-        glUseProgram(piecesShaderProgram);
+            glBindVertexArray(boardVao);
 
-        int nPieces = fillBufferFromBoard(b, piecesVbo);
+            glBindBuffer(GL_ARRAY_BUFFER, BoardVbo);
+            glUseProgram(shaderProgram);
 
-        glDrawArrays(GL_POINTS, 0, nPieces);
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+            attribLoc = glGetUniformLocation(shaderProgram, "invertX");
+            glUniform1i(attribLoc, (!b->blackComputer && (b->whiteComputer || (!b->whiteComputer && b->turn))) ? 1 : 0);
 
-        unsigned int x = 230000;
+            glActiveTexture(GL_TEXTURE0);
 
-        //Sleep(500);
-        /*while (--x && !b->end) {
-            PIECE* randPiece = b->pieces + (rand() % b->nPieces);
-
-            if (!randPiece->present || randPiece->col != b->turn)
-                continue;
-            MOVE_CONTAINER mc = getAllMoves(b);
-            possibleMoves = mc.moves;
-            if (!possibleMoves)
-                continue;
-
-            nPossibleMoves = mc.nMoves;
-
-            if (nPossibleMoves) {
-                MOVE m = possibleMoves[rand() % nPossibleMoves];
-                _move(b, &m, 1);
-                if (b->evolve)
-                    evolve(b, 1);
-                break;
+            if ((!b->blackComputer && (b->whiteComputer || (!b->whiteComputer && b->turn))) ? 1 : 0) {
+                glBindTexture(GL_TEXTURE_2D, boardTextureFlipped);
             }
-        }
-
-        if (!b->end) {
-
-            if (x == 0) {
-                b->end = b->turn ? 3 : 4;
-            }
-
-            for (size_t i = 0; i < b->nPieces; i++)
+            else
             {
-                if (b->pieces[i].ptemplate->king && !b->pieces[i].present) {
-                    b->end = 7;
-                }
+                glBindTexture(GL_TEXTURE_2D, boardTexture);
             }
-        }*/
 
-        if (b->end) {
-            if (++timer > 10) {
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            glBindVertexArray(piecesVao);
+            glUseProgram(piecesShaderProgram);
 
-                printf("final state:\n");
-                print_board(b, -1);
+            int nPieces = fillBufferFromBoard(b, piecesVbo);
 
-                switch (b->end)
-                {
-                /*case 1:
-                    if (MessageBox(glfwGetWin32Window(window), L"Nicht genug Material", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
-                        break;
-                    }
-                case 2:
-                    if (MessageBox(glfwGetWin32Window(window), L"Stellungswiederholung", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
-                        break;
-                    }*/
-                case 3:
-                    if (MessageBox(glfwGetWin32Window(window), L"Patt:\nSchwarz hat keine legalen Züge", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
-                        break;
-                    }
-                case 4:
-                    if (MessageBox(glfwGetWin32Window(window), L"Patt:\nWeiß hat keine legalen Züge", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
-                        break;
-                    }
-                /*case 5:
-                    if (MessageBox(glfwGetWin32Window(window), L"Weiß hat gewonnen", L"Schachmatt", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
-                        break;
-                    }
-                case 6:
-                    if (MessageBox(glfwGetWin32Window(window), L"Schwarz hat gewonnen", L"Schachmatt", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
-                        break;
-                    }*/
-                case 7:
-                    if (MessageBox(glfwGetWin32Window(window), L"King not found", L"ERROR 404", MB_ICONERROR | MB_OK) == IDOK) {
-                        break;
-                    }
-                default:
-                    break;
-                }
+            glDrawArrays(GL_POINTS, 0, nPieces);
+            glfwSwapBuffers(window);
+            glfwPollEvents();
 
-                freeBoard(b);
-                b = createStdBoard();
-                startGame(b);
-
-                sprintf(title, "Chess %lld %d", t, ++gameCtr);
-                glfwSetWindowTitle(window, title);
-            }
         }
 
         if (b->evolve) {
@@ -340,6 +276,80 @@ int main()
                     evolve(b, 4);
                     break;
                 }
+            }
+        }
+
+        if (!b->end && ((b->turn && b->blackComputer) || (!b->turn && b->whiteComputer))) {
+            if (++timer > 40) {
+                MOVE_CONTAINER moves = getAllMoves(b);
+
+                MOVE move = chooseComputerMove(b);
+                if (move.valid) {
+                    for (size_t i = 0; i < moves.nMoves; i++)
+                    {
+                        MOVE* m = moves.moves + i;
+                        if ((m->x0 == move.x0) && (m->y0 == move.y0) && (m->x1 == move.x1) && (m->y1 == move.y1)) {
+                            _move(b, &move, 1);
+                            break;
+                        }
+                    }
+                }
+                /*printf("CheckLines:\n");
+                for (size_t i = 0; i < b->nCheckLines; i++)
+                {
+                    printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d, reps: %d, nBtw: %d\n", (char)('a' + b->checkLines[i].move.x0), (char)('1' + b->checkLines[i].move.y0), (char)('a' + b->checkLines[i].move.x1), (char)('1' + b->checkLines[i].move.y1), b->checkLines[i].check, b->checkLines[i].direct, b->checkLines[i].col, b->checkLines[i].reps, b->checkLines[i].nBtw);
+                }
+                printf("\n");*/
+            }
+        }
+
+        if (b->end) {
+            if (++timer > 10) {
+
+                printf("final state:\n");
+                print_board(b, -1);
+
+                switch (b->end)
+                {
+                case 1:
+                    if (MessageBox(glfwGetWin32Window(window), L"Nicht genug Material", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                        break;
+                    }
+                case 2:
+                    if (MessageBox(glfwGetWin32Window(window), L"Stellungswiederholung", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                        break;
+                    }
+                case 3:
+                    if (MessageBox(glfwGetWin32Window(window), L"Patt:\nSchwarz hat keine legalen Züge", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                        break;
+                    }
+                case 4:
+                    if (MessageBox(glfwGetWin32Window(window), L"Patt:\nWeiß hat keine legalen Züge", L"Remis", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                        break;
+                    }
+                case 5:
+                    if (MessageBox(glfwGetWin32Window(window), L"Weiß hat gewonnen", L"Schachmatt", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                        break;
+                    }
+                case 6:
+                    if (MessageBox(glfwGetWin32Window(window), L"Schwarz hat gewonnen", L"Schachmatt", MB_ICONEXCLAMATION | MB_OK) == IDOK) {
+                        break;
+                    }
+                case 7:
+                    if (MessageBox(glfwGetWin32Window(window), L"King not found", L"ERROR 404", MB_ICONERROR | MB_OK) == IDOK) {
+                        break;
+                    }
+                default:
+                    break;
+                }
+
+                freeBoard(b);
+                b = createStdBoard();
+                startGame(b);
+                b->blackComputer = 1;
+
+                sprintf(title, "Chess %lld %d", t, ++gameCtr);
+                glfwSetWindowTitle(window, title);
             }
         }
 
@@ -458,10 +468,10 @@ int fillBufferFromBoard(_BOARD* b, unsigned int vbo) {
 
 
     int actualMoves = 0;
-    if (possibleMoves) {
-        for (size_t i = 0; i < nPossibleMoves; i++)
+    if (possibleMoves.moves) {
+        for (size_t i = 0; i < possibleMoves.nMoves; i++)
         {
-            if ((possibleMoves[i].x0 == selectedX) && (possibleMoves[i].y0 == selectedY)) {
+            if ((possibleMoves.moves[i].x0 == selectedX) && (possibleMoves.moves[i].y0 == selectedY)) {
                 actualMoves++;
             }
         }
@@ -472,12 +482,15 @@ int fillBufferFromBoard(_BOARD* b, unsigned int vbo) {
 
     int j = 0;
     int k = 0;
+
+    int flipBoard = (!b->blackComputer && (b->whiteComputer || (!b->whiteComputer && b->turn))) ? 1 : 0;
+
     if (actualMoves) {
-        while (k < nPossibleMoves && j < actualMoves) {
-            if ((possibleMoves[k].x0 == selectedX) && (possibleMoves[k].y0 == selectedY)) {
-                result[j * 3] = possibleMoves[k].x1;
-                result[j * 3 + 1] = possibleMoves[k].y1;
-                result[j * 3 + 2] = possibleMoves[k].cap ? 14 : 12;
+        while (k < possibleMoves.nMoves && j < actualMoves) {
+            if ((possibleMoves.moves[k].x0 == selectedX) && (possibleMoves.moves[k].y0 == selectedY)) {
+                result[j * 3] = flipBoard ? (7 - possibleMoves.moves[k].x1) : possibleMoves.moves[k].x1;
+                result[j * 3 + 1] = flipBoard ? (7 - possibleMoves.moves[k].y1) : possibleMoves.moves[k].y1;
+                result[j * 3 + 2] = possibleMoves.moves[k].cap ? 14 : 12;
                 j++;
             }
             k++;
@@ -487,8 +500,8 @@ int fillBufferFromBoard(_BOARD* b, unsigned int vbo) {
     for (size_t i = 0; i < b->nPieces; i++)
     {
         if (b->pieces[i].present) {
-            result[j * 3] = (int)b->pieces[i].x;
-            result[j * 3 + 1] = (int)b->pieces[i].y;
+            result[j * 3] = flipBoard ? (7 - (int)b->pieces[i].x) : (int)b->pieces[i].x;
+            result[j * 3 + 1] = flipBoard ? (7 - (int)b->pieces[i].y) : (int)b->pieces[i].y;
             result[j * 3 + 2] = (int)(b->pieces[i].ptemplate - b->game.pieceTypes);
             if (b->pieces[i].col)
                 result[3 * j + 2] += 6;
@@ -509,52 +522,53 @@ int mouseX = 0, mouseY = 0;
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
+    int flipBoard = (!b->blackComputer && (b->whiteComputer || (!b->whiteComputer && b->turn))) ? 1 : 0;
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        selectedX = mouseX / 100;
-        selectedY = 7 - mouseY / 100;
+        selectedX = flipBoard ? (7 - mouseX / 100) : mouseX / 100;
+        selectedY = !flipBoard ? (7 - mouseY / 100) : mouseY / 100;
         selected = b->squares[8 * selectedY + selectedX] && b->pieces[b->squares[8 * selectedY + selectedX] & 0b1111111].col == b->turn;
         if (selected) {
-            if (possibleMoves) {
-                free(possibleMoves);
-                possibleMoves = NULL;
+            if (possibleMoves.moves) {
+                free(possibleMoves.moves);
+                possibleMoves.moves = NULL;
+                possibleMoves.nMoves = 0;
             }
             FILETIME ftBefore;
             GetSystemTimeAsFileTime(&ftBefore);
-            MOVE_CONTAINER mc = getAllMoves(b);
-            possibleMoves = mc.moves;
-            nPossibleMoves = mc.nMoves;
+            possibleMoves = getAllMoves(b);
 
             FILETIME ftAfter;
             GetSystemTimeAsFileTime(&ftAfter);
+            printf("static evaluation: %d\n", eval(b));
 
             unsigned long long t = (((size_t)ftAfter.dwHighDateTime << 32) | (size_t)ftAfter.dwLowDateTime) - (((size_t)ftBefore.dwHighDateTime << 32) | (size_t)ftBefore.dwLowDateTime);
-            printf("Got all possible moves in %lu us\n", t);
+            //printf("Got all possible moves in %lu us\n", t);
         }
         else {
-            if (possibleMoves)
-                free(possibleMoves);
-            possibleMoves = NULL;
-            nPossibleMoves = 0;
+            if (possibleMoves.moves)
+                free(possibleMoves.moves);
+            possibleMoves = (MOVE_CONTAINER){ 0 };
         }
     }
     else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
         if (selected) {
-            int i = -1;
-            while (possibleMoves[++i].valid) {
-                int x = mouseX / 100;
-                int y = 7 - mouseY / 100;
-                if ((possibleMoves[i].x1 == x) && (possibleMoves[i].y1 == y) && (selectedX == possibleMoves[i].x0) && (selectedY == possibleMoves[i].y0)) {
-                    _move(b, possibleMoves + i, 1);
-                    printf("CheckLines:\n");
+            int x = flipBoard ? (7 - mouseX / 100) : (mouseX / 100);
+            int y = !flipBoard ? (7 - mouseY / 100) : (mouseY / 100);
+
+            for (int i = 0; i < possibleMoves.nMoves; i++) {
+                if (!possibleMoves.moves[i].valid)
+                    continue;
+                if ((possibleMoves.moves[i].x1 == x) && (possibleMoves.moves[i].y1 == y) && (selectedX == possibleMoves.moves[i].x0) && (selectedY == possibleMoves.moves[i].y0)) {
+                    _move(b, possibleMoves.moves + i, 1);
+                    /*printf("CheckLines:\n");
                     for (size_t i = 0; i < b->nCheckLines; i++)
                     {
-                        printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d, nBtw: %d\n", (char)('a' + b->checkLines[i].move.x0), (char)('1' + b->checkLines[i].move.y0), (char)('a' + b->checkLines[i].move.x1), (char)('1' + b->checkLines[i].move.y1), b->checkLines[i].check, b->checkLines[i].direct, b->checkLines[i].col, b->checkLines[i].nBtw);
+                        printf("\t%c%c->%c%c; check: %d, direct: %d, color: %d, reps: %d, nBtw: %d\n", (char)('a' + b->checkLines[i].move.x0), (char)('1' + b->checkLines[i].move.y0), (char)('a' + b->checkLines[i].move.x1), (char)('1' + b->checkLines[i].move.y1), b->checkLines[i].check, b->checkLines[i].direct, b->checkLines[i].col, b->checkLines[i].reps, b->checkLines[i].nBtw);
                     }
-                    printf("\n");
-                    if (possibleMoves)
-                        free(possibleMoves);
-                    possibleMoves = NULL;
-                    nPossibleMoves = 0;
+                    printf("\n");*/
+                    if (possibleMoves.moves)
+                        free(possibleMoves.moves);
+                    possibleMoves = (MOVE_CONTAINER){ 0 };
                     selected = 0;
                     break;
                 }

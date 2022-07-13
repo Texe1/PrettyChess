@@ -3,6 +3,8 @@
 in vec3 Color;
 in vec2 TexCoord;
 
+uniform int invertX;
+
 out vec4 outColor;
 
 uniform sampler2D tex;

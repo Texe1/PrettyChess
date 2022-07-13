@@ -1,14 +1,16 @@
 #pragma once
 #include "piece.h"
 
+#include <string.h>
+
 struct _BOARD;
 
 typedef struct GAME {
 	int nPieceTypes;
 	PIECE_TEMPLATE* pieceTypes;
 	unsigned char startPosition[64];
-	MOVE* (*funnyMoves)(PIECE*, struct _BOARD*, char);
-	void (*doFunnyMove)(PIECE*, struct _BOARD*, MOVE*);
+	MOVE_CONTAINER (*funnyMoves)(PIECE*, struct _BOARD*, char, char);
+	void (*doFunnyMove)(struct _BOARD*, MOVE*);
 	int (*isDraw)(struct _BOARD*);
 } GMAE, GAME;
 
@@ -28,6 +30,9 @@ typedef struct _BOARD {
 	unsigned char end;
 	unsigned char wh_pieceCount;
 	unsigned char bl_pieceCount;
+
+	unsigned char blackComputer; // 0 for human (different difficulties?)
+	unsigned char whiteComputer; // 0 for human
 
 	unsigned long nPositions;
 	unsigned char* positions;
@@ -56,9 +61,9 @@ void startGame(_BOARD* board);
 
 void setStartingPos(GAME* game, const char* pos);
 
-MOVE* funnyMovesStd(PIECE* piece, _BOARD* board, char checkCheck);
+MOVE_CONTAINER funnyMovesStd(PIECE* piece, _BOARD* board, char checkCheck, char raw);
 
-void doFunnyMoveStd(PIECE*, struct _BOARD*, MOVE*);
+void doFunnyMoveStd(struct _BOARD*, MOVE*);
 
 int isDrawStd(struct _BOARD*);
 
@@ -73,3 +78,7 @@ void addCheckLine(_BOARD* board, CHECKLINE cl);
 void removeCheckLine(_BOARD* board, int index);
 
 void initCheckLines(_BOARD* board);
+
+_BOARD* copyBoard(_BOARD* board);
+
+void setBoard(_BOARD* dest, _BOARD* src);
