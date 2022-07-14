@@ -12,6 +12,7 @@ typedef struct GAME {
 	MOVE_CONTAINER (*funnyMoves)(PIECE*, struct _BOARD*, char, char);
 	void (*doFunnyMove)(struct _BOARD*, MOVE*);
 	int (*isDraw)(struct _BOARD*);
+	int (*evaluate)(PIECE*);
 } GMAE, GAME;
 
 struct CheckLine;
@@ -82,3 +83,5 @@ void initCheckLines(_BOARD* board);
 _BOARD* copyBoard(_BOARD* board);
 
 void setBoard(_BOARD* dest, _BOARD* src);
+
+int standartEvaluate(PIECE* p);

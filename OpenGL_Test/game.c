@@ -182,6 +182,7 @@ _BOARD* createStdBoard() {
 	board->game.funnyMoves = funnyMovesStd;
 	board->game.doFunnyMove = doFunnyMoveStd;
 	board->game.isDraw = isDrawStd;
+	board->game.evaluate = standartEvaluate;
 	board->nMoves = 0;
 
 	startGame(board);
@@ -243,7 +244,10 @@ void startGame(_BOARD* board) {
 				break;
 		}
 	}
-
+	for (size_t i = 0; i < board->nPieces; i++)
+	{
+		board->pieces[i].eval = board->game.evaluate(&board->pieces[i]);
+	}
 	savePos(board);
 
 	initCheckLines(board);

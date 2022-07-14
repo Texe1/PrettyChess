@@ -324,11 +324,15 @@ int _move(void* b, MOVE* m, char save) {
 
 
 			if (piece->ptemplate->king) {
-				for (size_t i = 0; i < board->nCheckLines; i++)
+				/*for (size_t i = 0; i < board->nCheckLines; i++)
 				{
 					if (board->checkLines[i].col == piece->col) {
 						removeCheckLine(b, i);
 					}
+				}*/
+				clearCheckLineTarget(b, m->x0, m->y0, piece->col);
+				for (size_t i = 0; i < movesBefore.nMoves; i++) {
+					clearCheckLineTarget(b, movesBefore.moves[i].x0, movesBefore.moves[i].y0, piece->col);
 				}
 
 				MOVE_CONTAINER moves = getPossibleMoves(piece, b, 0, 1);
@@ -340,8 +344,9 @@ int _move(void* b, MOVE* m, char save) {
 
 			}
 		}
+		piece->eval = board->game.evaluate(piece);
 	}
-
+	
 	board->turn ^= 1;
 	board->end = board->game.isDraw(board);
 	if (save) {
@@ -580,7 +585,7 @@ void createCheckLineTarget(void* b, int _x, int _y, int col) {
 		if (!mt) // this piece doesn't attack (_x, _y)
 			continue;
 
-		if ((mt->init && piece->moved) || mt->cantCap) // the opponents King can't be captured (anymore)
+		if ((mt->init && piece->moved) || (mt->cantCap)) // the opponents King can't be captured (anymore)
 			continue;
 
 		// filling in a CHECKLINE struct

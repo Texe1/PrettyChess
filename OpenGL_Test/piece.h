@@ -71,11 +71,12 @@ typedef struct PIECE {
 		col		: 1,
 		moved	: 1,
 		present : 1;
+	int eval;
 } PIECE;
 
 MOVE_CONTAINER getPossibleMoves(PIECE* p, void* pBoard, char checkCheck, char raw);
 
-inline int getMaxMoveCount(MOVE_TEMPLATE*);
+int getMaxMoveCount(MOVE_TEMPLATE*);
 
 int _move(void*, MOVE*, char save);
 

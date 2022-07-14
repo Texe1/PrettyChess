@@ -69,7 +69,7 @@ MOVE miniMax(_BOARD* b, int depth) {
 			int z = _miniMax(bCopy, alpha, beta, (depth - 1));
 
 			//checking if the latest move is the best one so far
-			if (z >= max) {
+			if (z > max) {
 				max = z;
 				bestMove = moves.moves[i];
 			}
@@ -113,7 +113,7 @@ MOVE miniMax(_BOARD* b, int depth) {
 			}
 
 			// best move so far
-			if (val <= min) {
+			if (val < min) {
 				bestMove = moves.moves[i];
 				min = val;
 			}
@@ -134,9 +134,9 @@ int _miniMax(_BOARD* b, int alpha, int beta, int depth) {
 	case 1 || 2 || 3 || 4:
 		return 0;
 	case 5:
-		return WHITE_WIN;
+		return WHITE_WIN-1;
 	case 6:
-		return BLACK_WIN;
+		return BLACK_WIN+1;
 	default:
 		break;
 	}
@@ -263,33 +263,75 @@ int eval(_BOARD* b) {
 			continue;
 		}
 
-		int pieceEval = 0;
+	//	int pieceEval = 0;
 
-		switch (b->pieces[i].ptemplate->abbreviation)
-		{
-		case 'P':
-			pieceEval = 1;
-			break;
-		case 'N':
-			pieceEval = 3;
-			break;
-		case 'B':
-			pieceEval = 3;
-			break;
-		case 'R':
-			pieceEval = 5;
-			break;
-		case 'Q':
-			pieceEval = 9;
-		default:
-			break; 
-		}
+	//	switch (b->pieces[i].ptemplate->abbreviation)
+	//	{
+	//	case 'P':
+	//		pieceEval = 100;
+	//		//int xValue = (b->pieces[i].x <4) ? 3 - b->pieces[i].x : b->pieces[i].x - 4;
+	//		//pieceEval -= 4 * (xValue); // Value decreaces with distance to the center
+	//		//int colMultiplicator = b->pieces[i].col ? -1 : 1;
+	//		//pieceEval *= (b->pieces[i].y * colMultiplicator);
+	//		break;
+	//	case 'N':
+	//		pieceEval = 300;
+	//		break;
+	//	case 'B':
+	//		pieceEval = 300;
+	//		break;
+	//	case 'R':
+	//		pieceEval = 500;
+	//		break;
+	//	case 'Q':
+	//		pieceEval = 900;
+	//	default:
+	//		break; 
+	//	}
 
-		if (b->pieces[i].col) 
-			eval -= pieceEval;
-		else
-			eval += pieceEval;
+	//	if (b->pieces[i].col) 
+	//		eval -= pieceEval;
+	//	else
+	//		eval += pieceEval;
+
+		eval += b->pieces[i].eval;
+
+
 	}
 
 	return eval;
+}
+
+int standartEvaluate(PIECE* p) {
+	int pieceEval = 0;
+
+	switch (p->ptemplate->abbreviation)
+	{
+	case 'P':
+		pieceEval = 100;
+		int xValue = (p->x <4) ? 3 - p->x : p->x - 4;
+		pieceEval -= 4 * (xValue); // Value decreaces with distance to the center
+		int colMultiplicator = p->col ? -1 : 1;
+		pieceEval *= (p->y * colMultiplicator);
+		break;
+	case 'N':
+		pieceEval = 300;
+		break;
+	case 'B':
+		pieceEval = 300;
+		break;
+	case 'R':
+		pieceEval = 500;
+		break;
+	case 'Q':
+		pieceEval = 900;
+	default:
+		break;
+	}
+
+	if (p->col)
+		return -pieceEval;
+	else
+		return pieceEval;
+
 }
